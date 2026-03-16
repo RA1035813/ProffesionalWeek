@@ -1,0 +1,15 @@
+[Unit]
+Description=SoilSMS Analysis Server Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/soilsms
+EnvironmentFile=/home/pi/soilsms/.env
+ExecStart=/usr/bin/python3 /home/pi/soilsms/analysis_server.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
