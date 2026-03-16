@@ -7,6 +7,9 @@ from datetime import datetime
 import google.generativeai as genai
 from dotenv import load_dotenv
 
+# Importeer de lokale AI logica
+from localAI.local_inference import get_local_ai_advice
+
 load_dotenv()
 
 # --- LOGGING ---
@@ -16,19 +19,21 @@ log = logging.getLogger("soilsms.server")
 app = Flask(__name__)
 
 # --- CONFIG ---
-# Ensure your GEMINI_API_KEY is in a .env file
+# ZET DIT OP TRUE OM OLLAMA/MISTRAL TE GEBRUIKEN, FALSE VOOR GEMINI
+USE_LOCAL_AI = True 
+
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Requirement 4: The System Prompt
+# Requirement 4: De Systeem Prompt (ook gebruikt voor Gemini)
 SYSTEM_PROMPT = """You are an expert tropical agronomist helping smallholder farmers in Tanzania.
 Analyze the provided soil sensor data and 7-day weather forecast.
 Output ONLY a direct, actionable SMS advisory in Swahili (or simple English if needed).
 Max 160 characters. No jargon, no intro, no polite greetings.
 Focus on: watering, fertilizing, or crop rotation based on NPK and pH.
-Example: 'Udongo ni mkavu. Mvua inakuja kesho. Subiri kupanda mahindi wiki ijayo. Ongeza mbolea ya DAP.'"""
+Example: 'Udongo ni mkavu. Mvua inakuja kesho. Subiri kupanda mahindi wiki iyayo. Ongeza mbolea ya DAP.'"""
 
 def get_weather(lat, lon):
-    """Fetch 7-day forecast from Open-Meteo."""
+    """Haal 7-daagse voorspelling op van Open-Meteo."""
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=precipitation_sum,temperature_2m_max&timezone=auto"
     try:
         res = requests.get(url, timeout=10).json()
@@ -38,25 +43,25 @@ def get_weather(lat, lon):
         return {}
 
 def generate_ai_advice(sensor_data, weather_data):
-    """Uses Gemini to generate the 160-char SMS advisory."""
+    """Kiest tussen Lokale AI (Ollama) of Gemini API."""
+    if USE_LOCAL_AI:
+        log.info("Gebruik maken van LOKALE AI (Ollama/Mistral)...")
+        return get_local_ai_advice(sensor_data, weather_data)
+    
     try:
+        log.info("Gebruik maken van GEMINI CLOUD AI...")
         model = genai.GenerativeModel('gemini-1.5-flash')
-        
         user_prompt = f"Sensors: {sensor_data}\nForecast: {weather_data}\nAdvice:"
-        
-        # Combining system prompt and user data
         response = model.generate_content(SYSTEM_PROMPT + "\n\n" + user_prompt)
-        
-        # Ensure we don't exceed SMS length
         advice = response.text.strip()
         return advice[:160]
     except Exception as e:
-        log.error(f"AI Generation failed: {e}")
+        log.error(f"Gemini API Error: {e}")
         return "Bora uongeze mbolea kidogo na usubiri mvua wiki ijayo."
 
 @app.route('/api/data', methods=['POST'])
 def handle_incoming_data():
-    """Receives data from Farm Node (via HTTP for prototype)."""
+    """Ontvang data van de Farm Node (via HTTP voor prototype)."""
     try:
         payload = request.json
         node_id = payload.get("node_id")
@@ -65,21 +70,21 @@ def handle_incoming_data():
         lon = payload["location"]["lon"]
         sensors = payload["sensors"]
         
-        log.info(f"Data received from Node {node_id} (Farmer: {farmer_phone})")
+        log.info(f"Data ontvangen van Node {node_id} (Boer: {farmer_phone})")
         
-        # 1. Fetch Weather
+        # 1. Haal Weer op
         weather = get_weather(lat, lon)
         
-        # 2. Generate Advice
+        # 2. Genereer Advies (Lokaal of Cloud)
         advice = generate_ai_advice(sensors, weather)
         
-        # 3. Send SMS (Simulated for prototype)
-        # In production, this would call Twilio or a local GSM modem
-        log.info(f"*** FINAL ADVISORY SENT TO {farmer_phone} ***")
-        log.info(f"SMS: {advice}")
+        # 3. Log het resultaat (Simulatie van SMS verzenden)
+        log.info(f"*** FINALE SMS VERZONDEN NAAR {farmer_phone} ***")
+        log.info(f"INHOUD: {advice}")
         
         return jsonify({
             "status": "success",
+            "mode": "LocalAI" if USE_LOCAL_AI else "Gemini",
             "advisory": advice,
             "timestamp": datetime.now().isoformat()
         }), 200
@@ -90,8 +95,8 @@ def handle_incoming_data():
 
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({"status": "running"}), 200
+    return jsonify({"status": "running", "local_ai_enabled": USE_LOCAL_AI}), 200
 
 if __name__ == "__main__":
-    log.info("SoilSMS Analysis Server Started on :5000")
+    log.info(f"SoilSMS Analysis Server Gestart op :5000 (LocalAI={USE_LOCAL_AI})")
     app.run(host="0.0.0.0", port=5000)
