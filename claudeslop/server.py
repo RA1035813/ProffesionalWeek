@@ -8,13 +8,15 @@ Stack:
   - Flask web server (optional webhook for hosted SMS APIs like Africa's Talking)
   - Alternatively: GSM modem on server via AT commands (same GSMModem class)
   - Open-Meteo API for weather (free, no key required)
-  - Anthropic Claude for agronomic analysis
+    - Low-cost LLM via OpenAI-compatible API (default: Kimi/Moonshot)
 
 Install:
-  pip install flask requests anthropic pyserial
+    pip install flask requests pyserial
 
 Environment variables:
-  ANTHROPIC_API_KEY      - Claude API key
+    LLM_API_KEY            - API key for your LLM provider (Kimi/OpenRouter/etc.)
+    LLM_BASE_URL           - OpenAI-compatible base URL (default https://api.moonshot.ai/v1)
+    LLM_MODEL              - Model name (default moonshot-v1-8k)
   AT_API_KEY             - Africa's Talking API key (if using AT SMS gateway)
   AT_USERNAME            - Africa's Talking username
   SMS_MODE               - "modem" or "africas_talking" (default: modem)
@@ -30,7 +32,6 @@ import time
 import logging
 import requests
 import serial
-import anthropic
 from flask import Flask, request, jsonify
 from datetime import datetime
 
@@ -48,7 +49,9 @@ app = Flask(__name__)
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+LLM_API_KEY       = os.environ.get("LLM_API_KEY", "")
+LLM_BASE_URL      = os.environ.get("LLM_BASE_URL", "https://api.moonshot.ai/v1")
+LLM_MODEL         = os.environ.get("LLM_MODEL", "moonshot-v1-8k")
 AT_API_KEY        = os.environ.get("AT_API_KEY", "")
 AT_USERNAME       = os.environ.get("AT_USERNAME", "")
 SMS_MODE          = os.environ.get("SMS_MODE", "modem")       # modem | africas_talking
@@ -139,9 +142,8 @@ pH interpretation:
 Moisture interpretation:
   <20% = very dry, 20-40% = dry, 40-70% = good, >70% = waterlogged"""
 
-def analyze_with_claude(sensor_data: dict, weather: dict) -> str:
-    """Send data to Claude for agronomic analysis."""
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+def analyze_with_llm(sensor_data: dict, weather: dict) -> str:
+    """Send data to a low-cost OpenAI-compatible LLM API (default: Kimi)."""
 
     user_message = f"""SOIL SENSOR READING (node {sensor_data.get('node_id', 'unknown')}):
 Moisture: {sensor_data.get('moisture_pct')}%
@@ -161,16 +163,42 @@ Water balance (rain minus evaporation): {weather.get('summary', {}).get('water_b
 
 Provide your agronomic assessment and recommendations."""
 
-    try:
-        message = client.messages.create(
-            model="claude-opus-4-5",
-            max_tokens=600,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_message}]
+    if not LLM_API_KEY:
+        log.error("LLM_API_KEY missing. Set it to your provider key (e.g., Kimi/Moonshot).")
+        return (
+            "Analysis unavailable because LLM API key is missing. "
+            f"Raw data: pH={sensor_data.get('ph')}, moisture={sensor_data.get('moisture_pct')}%, "
+            f"N={sensor_data.get('nitrogen_mg_kg')} P={sensor_data.get('phosphorus_mg_kg')} "
+            f"K={sensor_data.get('potassium_mg_kg')}"
         )
-        return message.content[0].text
+
+    try:
+        base_url = LLM_BASE_URL.rstrip("/")
+        response = requests.post(
+            f"{base_url}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {LLM_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": LLM_MODEL,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                "max_tokens": 600,
+                "temperature": 0.3,
+            },
+            timeout=25,
+        )
+        response.raise_for_status()
+        data = response.json()
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        if not content:
+            raise ValueError(f"Unexpected LLM response payload: {data}")
+        return content.strip()
     except Exception as e:
-        log.error(f"Claude API error: {e}")
+        log.error(f"LLM API error: {e}")
         return f"Analysis failed: {e}. Raw data sent: pH={sensor_data.get('ph')}, moisture={sensor_data.get('moisture_pct')}%, N={sensor_data.get('nitrogen_mg_kg')} P={sensor_data.get('phosphorus_mg_kg')} K={sensor_data.get('potassium_mg_kg')}"
 
 # ─── SMS SENDING ─────────────────────────────────────────────────────────────
@@ -260,7 +288,7 @@ def process_sensor_sms(raw_message: str, sender_phone: str):
     Full pipeline:
     1. Parse JSON from SMS
     2. Fetch weather
-    3. Analyse with Claude
+    3. Analyse with low-cost LLM API
     4. Reply to farmer
     """
     log.info(f"Processing SMS from {sender_phone}: {raw_message[:80]}...")
@@ -281,8 +309,8 @@ def process_sensor_sms(raw_message: str, sender_phone: str):
         weather = {"summary": {}, "forecast_days": []}
 
     # 3. AI analysis
-    log.info("Running Claude analysis...")
-    analysis = analyze_with_claude(sensor_data, weather)
+    log.info(f"Running LLM analysis with model: {LLM_MODEL}")
+    analysis = analyze_with_llm(sensor_data, weather)
 
     # 4. Compose and send reply
     timestamp = datetime.utcnow().strftime("%d/%m %H:%M")

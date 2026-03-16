@@ -12,7 +12,7 @@ No internet required on the farm. Works on 2G GSM.
   Sensors ──► sensor_node.py             analysis_server.py
               └─ Reads soil data              ├─ Parses SMS JSON
               └─ JSON via SMS ──────────────► ├─ Fetches weather (Open-Meteo)
-                                              ├─ Analyses with Claude
+                                              ├─ Analyses with low-cost LLM API (Kimi/OpenRouter)
                                               └─ Replies to farmer via SMS
                                                       │
                                                [Farmer's phone]
@@ -133,11 +133,12 @@ Set `SMS_MODE=modem` in .env. Server polls modem every 60s for incoming messages
 1. Register at africastalking.com
 2. Get a shortcode or use sandbox for testing
 3. Set `SMS_MODE=africas_talking` and fill AT_API_KEY + AT_USERNAME in .env
-4. Configure AT incoming SMS webhook to point to: `http://your-server:5000/sms/incoming`
+4. Set low-cost LLM values in .env: `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`
+5. Configure AT incoming SMS webhook to point to: `http://your-server:5000/sms/incoming`
 
 ```bash
 # Install deps
-pip install flask requests anthropic pyserial
+pip install flask requests pyserial
 
 # Configure
 cp .env.example .env
@@ -197,4 +198,4 @@ TIMING: Plant maize in 5-7 days after forecasted rain to use natural moisture. A
 | GSM modem won't send | Check SIM has credit; verify baud rate matches module |
 | pH reads wrong | Recalibrate with fresh buffer solutions |
 | DS18B20 not found | Check 4.7k pull-up; verify 1-Wire enabled in config.txt |
-| Claude returns error | Check ANTHROPIC_API_KEY in .env |
+| LLM returns error | Check LLM_API_KEY, LLM_BASE_URL, and LLM_MODEL in .env |
