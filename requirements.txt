@@ -1,0 +1,9 @@
+flask
+requests
+google-generativeai
+python-dotenv
+pyserial
+minimalmodbus
+adafruit-circuitpython-ads1x15
+adafruit-circuitpython-dht
+w1thermsensor

@@ -1,0 +1,14 @@
+[Unit]
+Description=SoilSMS Sensor Node Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/soilsms
+ExecStart=/usr/bin/python3 /home/pi/soilsms/sensor_node.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

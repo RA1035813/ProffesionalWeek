@@ -1,0 +1,22 @@
+# SoilSMS Agronomy Knowledge Base - Tanzania
+
+## BODEGEZONDHEID (SOIL HEALTH)
+- Kleigrond (Clay): Houdt water goed vast maar kan verzadigen. Aanbevolen: Rijst, suikerriet.
+- Zandgrond (Sandy): Droogt snel uit. Vereist organische mest (manure). Aanbevolen: Cassave, pinda's (groundnuts).
+- pH-Waarden:
+  - < 5.0 (Sterk zuur): Voeg kalk (lime) of as toe. Plant geen mais maar bonen.
+  - 6.0 - 7.5 (Ideaal): Meeste gewassen zoals mais en zonnebloem groeien goed.
+  - > 8.5 (Alkalisch): Voeg zwavel of compost toe.
+
+## GEWASSEN EN VOCHT (CROPS & MOISTURE)
+- Mais (Maize): Heeft minimaal 30% vocht nodig tijdens de bloei. Bij droogtevoorspelling: stop met bemesten, mulch de grond.
+- Bonen (Beans): Gevoelig voor wateroverlast. Bij voorspelde zware regen (>20mm): zorg voor afwatering.
+
+## BEMESTING (FERTILIZATION)
+- Stikstof (N) tekort (<100mg/kg): Gebruik Urea of NPK 20-10-10 voor mais.
+- Fosfor (P) tekort (<25mg/kg): Gebruik DAP (Diammonium Phosphate) bij het planten.
+- Kalium (K) tekort (<100mg/kg): Gebruik MOP (Muriate of Potash).
+
+## KLIMAAT STRATEGIE
+- Als er regen wordt verwacht binnen 48 uur: Niet bemesten (spoelt weg). Wacht tot na de regen.
+- Bij hittegolf (>35C): Gebruik mulch van droog gras om vocht in de grond te houden.
