@@ -1,23 +1,28 @@
 import requests
 import json
-from .rag_engine import SimpleRAG
+import os
+import sys
+
+# Zorg dat we de rag_engine kunnen importeren, ook als we vanuit de root draaien
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from rag_engine import SimpleRAG
 
 # --- CONFIG ---
-# Assuming Ollama is running on localhost:11434
+# Ollama draait standaard op localhost:11434
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "mistral" # Or llama3, mistral, or any light model you pulled
+MODEL_NAME = "mistral" 
 
 def get_local_ai_advice(sensor_data, weather_data):
     """
-    Calls the local Ollama instance with RAG context.
+    Roept de lokale Ollama instantie aan met RAG context.
     """
-    rag = SimpleRAG()
+    rag = SimpleRAG(kb_path="localAI/knowledge_base.txt")
     extra_context = rag.get_relevant_context(sensor_data, weather_data)
     
     system_instruction = (
         "You are a professional agronomist for small-scale Tanzanian farmers. "
         "Use the following provided knowledge to generate a 160-character SMS advisory "
-        "in simple English or Swahili. Output ONLY the SMS content."
+        "in simple Swahili or simple English. Output ONLY the SMS content, no intro."
     )
     
     user_prompt = f"""
@@ -33,18 +38,23 @@ def get_local_ai_advice(sensor_data, weather_data):
         "prompt": system_instruction + "\n\n" + user_prompt,
         "stream": False,
         "options": {
-            "num_predict": 100, # Limit response length
-            "temperature": 0.4
+            "num_predict": 100, 
+            "temperature": 0.3 # Lagere temp voor consistenter advies
         }
     }
     
     try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=30)
-        result = response.json()
-        return result.get("response", "System error. Please check soil manualy.").strip()[:160]
+        response = requests.post(OLLAMA_URL, json=payload, timeout=45)
+        if response.status_code == 200:
+            result = response.json()
+            advice = result.get("response", "").strip()
+            # Forceer SMS lengte
+            return advice[:160]
+        else:
+            return f"Ollama Error: {response.status_code}"
     except Exception as e:
         print(f"Local AI Inference Error: {e}")
-        return "Local AI unreachable. Check Ollama status."
+        return "Local AI unreachable. Check if Ollama is running."
 
 if __name__ == "__main__":
     # Test call
