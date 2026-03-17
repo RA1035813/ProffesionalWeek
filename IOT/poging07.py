@@ -116,7 +116,6 @@ def read_moisture():
 def send_data_http(temp, lux, soil):
     """Verstuurt data naar FastAPI met correcte schema-mapping."""
     payload = {
-        "id": int(time.time()), 
         "node_id": NODE_ID,
         "timestamp": datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
         "moisture_pct": 80.0 if soil == "WET" else 15.0,
