@@ -393,31 +393,31 @@
 <!-- ====== CONTACT FORM ====== -->
 <section>
   <h2>Request a Quote</h2>
-  <form class="contact-form" id="contact-form">
+  <form class="contact-form" id="contact-form" action="https://formsubmit.co/admin@mystic.gay" method="POST">
     <div class="form-row">
       <div class="form-group">
         <label for="name">Full Name</label>
-        <input type="text" id="name" placeholder="e.g. John Mwamba" required>
+        <input type="text" id="name" name="name" placeholder="e.g. John Mwamba" required>
       </div>
       <div class="form-group">
         <label for="email">Email Address</label>
-        <input type="email" id="email" placeholder="john@example.com" required>
+        <input type="email" id="email" name="email" placeholder="john@example.com" required>
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label for="org">Organisation / Farm Name</label>
-        <input type="text" id="org" placeholder="e.g. Kilimanjaro Agri Co-op">
+        <input type="text" id="org" name="organisation" placeholder="e.g. Kilimanjaro Agri Co-op">
       </div>
       <div class="form-group">
         <label for="phone">Phone Number</label>
-        <input type="tel" id="phone" placeholder="+255 7XX XXX XXX">
+        <input type="tel" id="phone" name="phone" placeholder="+255 7XX XXX XXX">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label for="plan">Interested In</label>
-        <select id="plan">
+        <select id="plan" name="plan">
           <option value="single">Single Node — $29 + $3/mo</option>
           <option value="farm" selected>Farm Bundle — $69 + $7/mo</option>
           <option value="coop">Co-op / NGO — Custom</option>
@@ -426,15 +426,18 @@
       </div>
       <div class="form-group">
         <label for="nodes">Estimated Number of Nodes</label>
-        <input type="number" id="nodes" placeholder="e.g. 5" min="1">
+        <input type="number" id="nodes" name="nodes" placeholder="e.g. 5" min="1">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group full">
         <label for="message">Tell Us About Your Farm / Needs</label>
-        <textarea id="message" placeholder="Describe your farm size, crops, location, and any specific requirements..."></textarea>
+        <textarea id="message" name="message" placeholder="Describe your farm size, crops, location, and any specific requirements..."></textarea>
       </div>
     </div>
+    <input type="hidden" name="_subject" value="New SoilSMS Quote Request">
+    <input type="hidden" name="_captcha" value="false">
+    <input type="hidden" name="_template" value="table">
     <button type="submit" class="form-submit">SEND REQUEST</button>
   </form>
 </section>
@@ -460,11 +463,30 @@
 <script>
   document.getElementById('contact-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    document.getElementById('confirm-overlay').classList.add('visible');
+    var form = e.target;
+    var btn = form.querySelector('.form-submit');
+    btn.disabled = true;
+    btn.textContent = 'SENDING...';
+    fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { 'Accept': 'application/json' }
+    }).then(function(res) {
+      if (res.ok) {
+        document.getElementById('confirm-overlay').classList.add('visible');
+        form.reset();
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    }).catch(function() {
+      alert('Network error. Please try again.');
+    }).finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'SEND REQUEST';
+    });
   });
   document.getElementById('confirm-close').addEventListener('click', function() {
     document.getElementById('confirm-overlay').classList.remove('visible');
-    document.getElementById('contact-form').reset();
   });
 </script>
 
