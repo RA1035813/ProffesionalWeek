@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IoT Sensor Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background: #0f172a;
+            color: white;
+        }
+
+        .card {
+            display: inline-block;
+            margin: 20px;
+            padding: 30px;
+            border-radius: 15px;
+            background: #1e293b;
+            width: 200px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            margin-top: 30px;
+        }
+
+        .value {
+            font-size: 2em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🌱 Smart Garden Dashboard</h1>
+
+<div class="card">
+    <h2>🌡 Temperature</h2>
+    <div id="temp" class="value">--</div>
+</div>
+
+<div class="card">
+    <h2>💡 Light</h2>
+    <div id="light" class="value">--</div>
+</div>
+
+<div class="card">
+    <h2>🌿 Soil</h2>
+    <div id="soil" class="value">--</div>
+</div>
+
+<script>
+const CHANNEL_ID = "3303857";
+const READ_API_KEY = "E0NPW68W1HOD2H7F";
+
+function fetchData() {
+    fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=1`)
+        .then(response => response.json())
+        .then(data => {
+            const feed = data.feeds[0];
+
+            const temp = feed.field1;
+            const light = feed.field2;
+            const soil = feed.field3;
+
+            // ✅ Format to 2 decimal places
+            document.getElementById("temp").innerText =
+                temp ? parseFloat(temp).toFixed(2) + " °C" : "N/A";
+
+            document.getElementById("light").innerText =
+                light ? parseFloat(light).toFixed(2) + " lx" : "N/A";
+
+            // Soil display
+            if (soil == 1) {
+                document.getElementById("soil").innerText = "WET 💧";
+            } else if (soil == 0) {
+                document.getElementById("soil").innerText = "DRY 🌵";
+            } else {
+                document.getElementById("soil").innerText = "N/A";
+            }
+        })
+        .catch(error => console.log("Error:", error));
+}
+
+// Load immediately
+fetchData();
+
+// Refresh every 20 seconds (matches ThingSpeak rate)
+setInterval(fetchData, 20000);
+</script>
+
+</body>
+</html>
