@@ -10,7 +10,7 @@ class SimpleRAG:
         else:
             print(f"Warning: Knowledge base {kb_path} not found.")
 
-    def get_relevant_context((self, sensor_data, weather_data)):
+    def get_relevant_context(self, sensor_data, weather_data):
         """
         Simple keyword-based context extraction.
         For a light local prototype, we select sections of the KB 
