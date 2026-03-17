@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoilSMS — Farm World Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+
+  #canvas-container {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    cursor: grab;
+  }
+  #canvas-container:active { cursor: grabbing; }
+
+  canvas { display: block; }
+
+  /* HUD overlay */
+  #hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  #hud h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 18px;
+    color: #7cfc00;
+    text-shadow: 0 0 10px #7cfc0066;
+    margin-bottom: 6px;
+  }
+  #hud p {
+    font-size: 12px;
+    color: #aaa;
+    max-width: 340px;
+  }
+
+  /* Sensor panel */
+  #sensor-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    background: rgba(0,0,0,0.75);
+    border: 1px solid #7cfc0044;
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 220px;
+    backdrop-filter: blur(8px);
+    transition: opacity 0.4s;
+  }
+  #sensor-panel h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: #7cfc00;
+    margin-bottom: 10px;
+  }
+  .sensor-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .sensor-row .label { color: #888; }
+  .sensor-row .value { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Nokia phone */
+  #nokia-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 20;
+    cursor: pointer;
+    transition: transform 0.3s;
+    pointer-events: all;
+  }
+  #nokia-container:hover { transform: scale(1.05); }
+
+  .nokia-phone {
+    width: 180px;
+    background: #1a1a2e;
+    border-radius: 20px 20px 30px 30px;
+    border: 2px solid #333;
+    padding: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 #2a2a4e;
+    position: relative;
+  }
+  .nokia-brand {
+    text-align: center;
+    font-size: 9px;
+    color: #555;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .nokia-screen {
+    background: #3a5a2a;
+    border-radius: 4px;
+    padding: 8px;
+    min-height: 120px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    line-height: 1.6;
+    color: #1a2e1a;
+    position: relative;
+    border: 2px solid #2a2a2a;
+    overflow: hidden;
+  }
+  .nokia-screen.lit {
+    background: #84c464;
+    color: #1a3a0a;
+    box-shadow: 0 0 20px #84c46444;
+  }
+  .nokia-screen .sms-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .nokia-keypad {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+  .nokia-key {
+    background: #2a2a4e;
+    border: 1px solid #3a3a5e;
+    border-radius: 4px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    color: #666;
+  }
+  .nokia-nav {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+  .nokia-nav-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #2a2a4e;
+    border: 1px solid #3a3a5e;
+  }
+  .nokia-nav-center {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #3a3a6e;
+    border: 2px solid #4a4a7e;
+  }
+  .nokia-hint {
+    text-align: center;
+    font-size: 9px;
+    color: #7cfc00;
+    margin-top: 8px;
+    animation: blink 1.5s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* SMS flight animation */
+  .sms-packet {
+    position: absolute;
+    pointer-events: none;
+    z-index: 15;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: #7cfc00;
+    text-shadow: 0 0 8px #7cfc00;
+    opacity: 0;
+  }
+
+  /* Flow legend */
+  #flow-legend {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 11px;
+    color: #888;
+  }
+  .flow-step {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .flow-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .flow-arrow { color: #555; }
+
+  /* Info overlay */
+  #info-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s;
+    cursor: pointer;
+  }
+  #info-overlay.hidden { opacity: 0; pointer-events: none; }
+  .info-card {
+    text-align: center;
+    max-width: 500px;
+    padding: 40px;
+  }
+  .info-card h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 24px;
+    color: #7cfc00;
+    margin-bottom: 16px;
+    text-shadow: 0 0 20px #7cfc0066;
+  }
+  .info-card p {
+    color: #aaa;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  .info-card .start-hint {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: #7cfc00;
+    animation: blink 1.5s infinite;
+  }
+</style>
+</head>
+<body>
+
+<!-- Landing overlay -->
+<div id="info-overlay">
+  <div class="info-card">
+    <h1>SoilSMS</h1>
+    <p>
+      A solar-powered Raspberry Pi reads soil sensors on a Tanzanian farm.
+      Data flies over 2G SMS to a server that runs AI analysis, then sends
+      crop advice back — all on a basic Nokia phone. No internet needed.
+    </p>
+    <p style="font-size:13px; color:#666;">
+      Drag to orbit &bull; Click the Nokia to toggle SMS &bull; Watch the data flow
+    </p>
+    <div class="start-hint">[ CLICK TO ENTER ]</div>
+  </div>
+</div>
+
+<div id="canvas-container">
+  <!-- HUD -->
+  <div id="hud">
+    <h1>SoilSMS</h1>
+    <p>RPi Zero 2 W &rarr; SMS &rarr; AI Server &rarr; SMS &rarr; Farmer</p>
+  </div>
+
+  <!-- Sensor readout -->
+  <div id="sensor-panel">
+    <h3>&#9670; LIVE SENSORS</h3>
+    <div class="sensor-row"><span class="label">Moisture</span><span class="value" id="v-moisture">34.2%</span></div>
+    <div class="sensor-row"><span class="label">pH</span><span class="value" id="v-ph">6.1</span></div>
+    <div class="sensor-row"><span class="label">Soil Temp</span><span class="value" id="v-soiltemp">24.5°C</span></div>
+    <div class="sensor-row"><span class="label">Air Temp</span><span class="value" id="v-airtemp">28.0°C</span></div>
+    <div class="sensor-row"><span class="label">Humidity</span><span class="value" id="v-humid">72.0%</span></div>
+    <div class="sensor-row"><span class="label">Nitrogen</span><span class="value" id="v-n">85 mg/kg</span></div>
+    <div class="sensor-row"><span class="label">Phosphorus</span><span class="value" id="v-p">30 mg/kg</span></div>
+    <div class="sensor-row"><span class="label">Potassium</span><span class="value" id="v-k">160 mg/kg</span></div>
+    <div style="margin-top:10px; font-size:10px; color:#555;">Node: FARM001 &bull; <span id="v-time">--:--</span></div>
+  </div>
+
+  <!-- Nokia phone -->
+  <div id="nokia-container" onclick="toggleNokia()">
+    <div class="nokia-phone">
+      <div class="nokia-brand">NOKIA</div>
+      <div class="nokia-screen" id="nokia-screen">
+        <div class="sms-text" id="nokia-text">
+          No new messages
+        </div>
+      </div>
+      <div class="nokia-nav">
+        <div class="nokia-nav-btn"></div>
+        <div class="nokia-nav-center"></div>
+        <div class="nokia-nav-btn"></div>
+      </div>
+      <div class="nokia-keypad">
+        <div class="nokia-key">1</div><div class="nokia-key">2</div><div class="nokia-key">3</div>
+        <div class="nokia-key">4</div><div class="nokia-key">5</div><div class="nokia-key">6</div>
+        <div class="nokia-key">7</div><div class="nokia-key">8</div><div class="nokia-key">9</div>
+        <div class="nokia-key">*</div><div class="nokia-key">0</div><div class="nokia-key">#</div>
+      </div>
+      <div class="nokia-hint" id="nokia-hint">TAP TO READ SMS</div>
+    </div>
+  </div>
+
+  <!-- Flow legend -->
+  <div id="flow-legend">
+    <div class="flow-step"><div class="flow-dot" style="background:#e74c3c;"></div> RPi Sensors</div>
+    <span class="flow-arrow">&#x2192;</span>
+    <div class="flow-step"><div class="flow-dot" style="background:#f1c40f;"></div> SMS (2G)</div>
+    <span class="flow-arrow">&#x2192;</span>
+    <div class="flow-step"><div class="flow-dot" style="background:#3498db;"></div> AI Server</div>
+    <span class="flow-arrow">&#x2192;</span>
+    <div class="flow-step"><div class="flow-dot" style="background:#7cfc00;"></div> Farmer</div>
+  </div>
+</div>
+
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ============================================================
+// SoilSMS Farm World — 3D Demo
+// ============================================================
+
+// --- Scene setup ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
+scene.fog = new THREE.FogExp2(0x87ceeb, 0.008);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
+camera.position.set(25, 18, 30);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+// --- Lights ---
+const ambientLight = new THREE.AmbientLight(0xffeedd, 0.5);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xfff5e0, 1.2);
+sunLight.position.set(30, 40, 20);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.camera.left = -50;
+sunLight.shadow.camera.right = 50;
+sunLight.shadow.camera.top = 50;
+sunLight.shadow.camera.bottom = -50;
+scene.add(sunLight);
+
+const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x556b2f, 0.4);
+scene.add(hemisphereLight);
+
+// --- Ground ---
+const groundGeo = new THREE.PlaneGeometry(200, 200, 40, 40);
+// Slightly perturb vertices for terrain feel
+const posAttr = groundGeo.attributes.position;
+for (let i = 0; i < posAttr.count; i++) {
+  const x = posAttr.getX(i);
+  const y = posAttr.getY(i);
+  posAttr.setZ(i, Math.sin(x * 0.1) * 0.5 + Math.cos(y * 0.08) * 0.3 + Math.random() * 0.2);
+}
+groundGeo.computeVertexNormals();
+const groundMat = new THREE.MeshLambertMaterial({ color: 0x5a8a3c });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// --- Farm soil patch (dark brown) ---
+const soilGeo = new THREE.PlaneGeometry(18, 12, 8, 8);
+const soilMat = new THREE.MeshLambertMaterial({ color: 0x5c3a1e });
+const soilPatch = new THREE.Mesh(soilGeo, soilMat);
+soilPatch.rotation.x = -Math.PI / 2;
+soilPatch.position.set(0, 0.05, 0);
+soilPatch.receiveShadow = true;
+scene.add(soilPatch);
+
+// --- Crop rows ---
+function createCropRow(x, z, count) {
+  for (let i = 0; i < count; i++) {
+    const height = 0.8 + Math.random() * 1.2;
+    const stalkGeo = new THREE.CylinderGeometry(0.04, 0.06, height, 4);
+    const stalkMat = new THREE.MeshLambertMaterial({ color: 0x3a7a2a });
+    const stalk = new THREE.Mesh(stalkGeo, stalkMat);
+    stalk.position.set(x + i * 1.2 - (count * 0.6), height / 2, z);
+    stalk.castShadow = true;
+    scene.add(stalk);
+
+    // Leaf
+    const leafGeo = new THREE.PlaneGeometry(0.6, 0.15);
+    const leafMat = new THREE.MeshLambertMaterial({ color: 0x4a9a3a, side: THREE.DoubleSide });
+    const leaf = new THREE.Mesh(leafGeo, leafMat);
+    leaf.position.set(x + i * 1.2 - (count * 0.6), height * 0.7, z);
+    leaf.rotation.y = Math.random() * Math.PI;
+    leaf.rotation.z = 0.3;
+    scene.add(leaf);
+  }
+}
+for (let row = -4; row <= 4; row += 2) {
+  createCropRow(0, row, 12);
+}
+
+// --- RPi Sensor Device (stylized box with antenna & probes) ---
+const rpiGroup = new THREE.Group();
+rpiGroup.position.set(-3, 0, -2);
+
+// Main enclosure
+const boxGeo = new THREE.BoxGeometry(1.2, 0.6, 0.8);
+const boxMat = new THREE.MeshPhongMaterial({ color: 0x2c8c3c, specular: 0x222222 });
+const rpiBox = new THREE.Mesh(boxGeo, boxMat);
+rpiBox.position.y = 1.5;
+rpiBox.castShadow = true;
+rpiGroup.add(rpiBox);
+
+// Pole
+const poleGeo = new THREE.CylinderGeometry(0.06, 0.08, 1.5, 6);
+const poleMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+const pole = new THREE.Mesh(poleGeo, poleMat);
+pole.position.y = 0.75;
+pole.castShadow = true;
+rpiGroup.add(pole);
+
+// Solar panel on top
+const solarGeo = new THREE.BoxGeometry(1.4, 0.05, 1.0);
+const solarMat = new THREE.MeshPhongMaterial({ color: 0x1a1a4a, specular: 0x4444aa, shininess: 80 });
+const solar = new THREE.Mesh(solarGeo, solarMat);
+solar.position.y = 2.0;
+solar.rotation.z = 0.15;
+solar.castShadow = true;
+rpiGroup.add(solar);
+
+// Antenna
+const antennaGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.0, 4);
+const antennaMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+const antenna = new THREE.Mesh(antennaGeo, antennaMat);
+antenna.position.set(0.5, 2.3, 0);
+rpiGroup.add(antenna);
+
+// Antenna tip
+const tipGeo = new THREE.SphereGeometry(0.06, 8, 8);
+const tipMat = new THREE.MeshPhongMaterial({ color: 0xff3333, emissive: 0xff0000, emissiveIntensity: 0.5 });
+const tip = new THREE.Mesh(tipGeo, tipMat);
+tip.position.set(0.5, 2.85, 0);
+rpiGroup.add(tip);
+
+// Soil probes going into ground
+for (let i = -1; i <= 1; i++) {
+  const probeGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6);
+  const probeMat = new THREE.MeshLambertMaterial({ color: 0x666666 });
+  const probe = new THREE.Mesh(probeGeo, probeMat);
+  probe.position.set(i * 0.3, -0.1, 0.3);
+  rpiGroup.add(probe);
+}
+
+// LED indicator on box
+const ledGeo = new THREE.SphereGeometry(0.05, 8, 8);
+const ledMat = new THREE.MeshPhongMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 1 });
+const led = new THREE.Mesh(ledGeo, ledMat);
+led.position.set(-0.4, 1.55, 0.41);
+rpiGroup.add(led);
+
+scene.add(rpiGroup);
+
+// Label for RPi
+const rpiLabelPos = new THREE.Vector3(-3, 3.5, -2);
+
+// --- Cell Tower ---
+const towerGroup = new THREE.Group();
+towerGroup.position.set(20, 0, -15);
+
+// Tower legs (simplified lattice)
+const legMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+for (let i = 0; i < 3; i++) {
+  const angle = (i / 3) * Math.PI * 2;
+  const legGeo = new THREE.CylinderGeometry(0.08, 0.15, 14, 6);
+  const leg = new THREE.Mesh(legGeo, legMat);
+  leg.position.set(Math.cos(angle) * 0.8, 7, Math.sin(angle) * 0.8);
+  leg.castShadow = true;
+  towerGroup.add(leg);
+}
+
+// Cross bars
+for (let h = 2; h < 14; h += 2) {
+  const barGeo = new THREE.BoxGeometry(2.0, 0.06, 0.06);
+  const bar = new THREE.Mesh(barGeo, legMat);
+  bar.position.y = h;
+  bar.rotation.y = h * 0.5;
+  towerGroup.add(bar);
+}
+
+// Antenna panels at top
+for (let i = 0; i < 3; i++) {
+  const panelGeo = new THREE.BoxGeometry(0.6, 1.2, 0.1);
+  const panelMat = new THREE.MeshPhongMaterial({ color: 0xdddddd });
+  const panel = new THREE.Mesh(panelGeo, panelMat);
+  const angle = (i / 3) * Math.PI * 2;
+  panel.position.set(Math.cos(angle) * 1.0, 14, Math.sin(angle) * 1.0);
+  panel.rotation.y = angle;
+  panel.castShadow = true;
+  towerGroup.add(panel);
+}
+
+// Red warning light
+const towerLightGeo = new THREE.SphereGeometry(0.15, 8, 8);
+const towerLightMat = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 });
+const towerLight = new THREE.Mesh(towerLightGeo, towerLightMat);
+towerLight.position.y = 15;
+towerGroup.add(towerLight);
+
+scene.add(towerGroup);
+
+// --- Server building ---
+const serverGroup = new THREE.Group();
+serverGroup.position.set(20, 0, 18);
+
+const buildingGeo = new THREE.BoxGeometry(4, 3, 3);
+const buildingMat = new THREE.MeshPhongMaterial({ color: 0x4a4a6a });
+const building = new THREE.Mesh(buildingGeo, buildingMat);
+building.position.y = 1.5;
+building.castShadow = true;
+serverGroup.add(building);
+
+// Roof
+const roofGeo = new THREE.BoxGeometry(4.4, 0.2, 3.4);
+const roofMat = new THREE.MeshLambertMaterial({ color: 0x3a3a5a });
+const roof = new THREE.Mesh(roofGeo, roofMat);
+roof.position.y = 3.1;
+serverGroup.add(roof);
+
+// Server rack lights
+for (let i = 0; i < 4; i++) {
+  const sLedGeo = new THREE.BoxGeometry(0.3, 0.08, 0.01);
+  const sLedMat = new THREE.MeshPhongMaterial({
+    color: i % 2 === 0 ? 0x00ff88 : 0x3388ff,
+    emissive: i % 2 === 0 ? 0x00ff88 : 0x3388ff,
+    emissiveIntensity: 0.8
+  });
+  const sLed = new THREE.Mesh(sLedGeo, sLedMat);
+  sLed.position.set(-0.8 + i * 0.5, 1.5, 1.51);
+  serverGroup.add(sLed);
+}
+
+// "AI" label (using a small plane)
+const aiGeo = new THREE.PlaneGeometry(1.5, 0.6);
+const aiCanvas = document.createElement('canvas');
+aiCanvas.width = 150;
+aiCanvas.height = 60;
+const aiCtx = aiCanvas.getContext('2d');
+aiCtx.fillStyle = '#3498db';
+aiCtx.fillRect(0, 0, 150, 60);
+aiCtx.fillStyle = '#fff';
+aiCtx.font = 'bold 30px monospace';
+aiCtx.textAlign = 'center';
+aiCtx.fillText('AI SERVER', 75, 40);
+const aiTex = new THREE.CanvasTexture(aiCanvas);
+const aiMat = new THREE.MeshBasicMaterial({ map: aiTex });
+const aiLabel = new THREE.Mesh(aiGeo, aiMat);
+aiLabel.position.set(0, 2.5, 1.52);
+serverGroup.add(aiLabel);
+
+// Satellite dish on roof
+const dishGeo = new THREE.SphereGeometry(0.6, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+const dishMat = new THREE.MeshPhongMaterial({ color: 0xdddddd, side: THREE.DoubleSide });
+const dish = new THREE.Mesh(dishGeo, dishMat);
+dish.position.set(1.2, 3.3, 0);
+dish.rotation.x = Math.PI * 0.7;
+serverGroup.add(dish);
+
+scene.add(serverGroup);
+
+// --- Farmer hut ---
+const hutGroup = new THREE.Group();
+hutGroup.position.set(-18, 0, 12);
+
+const wallGeo = new THREE.CylinderGeometry(2.5, 2.8, 2.5, 8);
+const wallMat = new THREE.MeshLambertMaterial({ color: 0xc4956a });
+const wall = new THREE.Mesh(wallGeo, wallMat);
+wall.position.y = 1.25;
+wall.castShadow = true;
+hutGroup.add(wall);
+
+const thatcGeo = new THREE.ConeGeometry(3.2, 2, 8);
+const thatchMat = new THREE.MeshLambertMaterial({ color: 0xb8960c });
+const thatch = new THREE.Mesh(thatcGeo, thatchMat);
+thatch.position.y = 3.5;
+thatch.castShadow = true;
+hutGroup.add(thatch);
+
+// Door
+const doorGeo = new THREE.PlaneGeometry(0.8, 1.6);
+const doorMat = new THREE.MeshLambertMaterial({ color: 0x4a3520 });
+const door = new THREE.Mesh(doorGeo, doorMat);
+door.position.set(0, 0.8, 2.81);
+hutGroup.add(door);
+
+scene.add(hutGroup);
+
+// --- Trees ---
+function createTree(x, z, scale) {
+  const trunkGeo = new THREE.CylinderGeometry(0.15 * scale, 0.25 * scale, 2 * scale, 6);
+  const trunkMat = new THREE.MeshLambertMaterial({ color: 0x6b4226 });
+  const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+  trunk.position.set(x, scale, z);
+  trunk.castShadow = true;
+  scene.add(trunk);
+
+  const leafGeo = new THREE.SphereGeometry(1.2 * scale, 8, 6);
+  const leafMat = new THREE.MeshLambertMaterial({ color: 0x2d7a2d + Math.floor(Math.random() * 0x1a1a1a) });
+  const leaf = new THREE.Mesh(leafGeo, leafMat);
+  leaf.position.set(x, 2.2 * scale, z);
+  leaf.castShadow = true;
+  scene.add(leaf);
+}
+const treePositions = [
+  [-25, -8, 1.2], [-22, -5, 1.0], [-28, 2, 1.4], [-20, 8, 1.1],
+  [28, -10, 1.3], [30, 5, 1.0], [25, 12, 1.2], [-12, -18, 1.1],
+  [15, -20, 1.3], [-8, 20, 1.0], [10, 22, 1.2], [-30, -15, 1.4],
+  [32, -18, 1.1], [-15, 22, 0.9], [35, 20, 1.3]
+];
+treePositions.forEach(([x, z, s]) => createTree(x, z, s));
+
+// --- Sun ---
+const sunGeo = new THREE.SphereGeometry(3, 16, 16);
+const sunMat = new THREE.MeshBasicMaterial({ color: 0xffee44 });
+const sun = new THREE.Mesh(sunGeo, sunMat);
+sun.position.set(60, 50, -40);
+scene.add(sun);
+
+// Sun glow
+const glowGeo = new THREE.SphereGeometry(5, 16, 16);
+const glowMat = new THREE.MeshBasicMaterial({ color: 0xffee44, transparent: true, opacity: 0.15 });
+const glow = new THREE.Mesh(glowGeo, glowMat);
+glow.position.copy(sun.position);
+scene.add(glow);
+
+// --- Clouds ---
+function createCloud(x, y, z) {
+  const group = new THREE.Group();
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+  for (let i = 0; i < 5; i++) {
+    const r = 1 + Math.random() * 1.5;
+    const geo = new THREE.SphereGeometry(r, 8, 6);
+    const m = new THREE.Mesh(geo, cloudMat);
+    m.position.set(i * 1.5 - 3, Math.random() * 0.5, Math.random() * 1 - 0.5);
+    group.add(m);
+  }
+  group.position.set(x, y, z);
+  scene.add(group);
+  return group;
+}
+const clouds = [
+  createCloud(-20, 25, -30),
+  createCloud(15, 28, -25),
+  createCloud(40, 22, 10),
+  createCloud(-35, 27, 15),
+];
+
+// ============================================================
+// SMS data flow particles
+// ============================================================
+const particles = [];
+const particleGeo = new THREE.SphereGeometry(0.15, 6, 6);
+const particleSendMat = new THREE.MeshBasicMaterial({ color: 0xf1c40f });
+const particleRecvMat = new THREE.MeshBasicMaterial({ color: 0x7cfc00 });
+
+// Path: RPi -> Tower -> Server (send)
+const sendPath = [
+  new THREE.Vector3(-3, 2.85, -2),    // RPi antenna
+  new THREE.Vector3(8, 10, -8),        // arc
+  new THREE.Vector3(20, 15, -15),      // Tower
+];
+// Path: Server -> Tower -> Farmer hut (receive)
+const recvPath = [
+  new THREE.Vector3(20, 3, 18),        // Server
+  new THREE.Vector3(20, 15, -15),      // Tower
+  new THREE.Vector3(0, 10, 0),         // arc
+  new THREE.Vector3(-18, 3, 12),       // Farmer hut
+];
+
+function createParticle(path, mat, speed) {
+  const mesh = new THREE.Mesh(particleGeo, mat);
+  mesh.visible = false;
+  scene.add(mesh);
+  return { mesh, path, t: 0, speed, active: false };
+}
+
+// Create particle pool
+for (let i = 0; i < 5; i++) {
+  particles.push(createParticle(sendPath, particleSendMat, 0.008 + Math.random() * 0.004));
+  particles.push(createParticle(recvPath, particleRecvMat, 0.007 + Math.random() * 0.003));
+}
+
+function getPointOnPath(path, t) {
+  const segments = path.length - 1;
+  const seg = Math.min(Math.floor(t * segments), segments - 1);
+  const localT = (t * segments) - seg;
+  return new THREE.Vector3().lerpVectors(path[seg], path[seg + 1], localT);
+}
+
+// ============================================================
+// Orbit controls (simple)
+// ============================================================
+let isDragging = false;
+let prevMouse = { x: 0, y: 0 };
+let orbitAngle = 0.8;
+let orbitPitch = 0.4;
+let orbitDist = 42;
+
+container.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+container.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  orbitAngle -= (e.clientX - prevMouse.x) * 0.005;
+  orbitPitch = Math.max(0.1, Math.min(1.2, orbitPitch - (e.clientY - prevMouse.y) * 0.005));
+  prevMouse = { x: e.clientX, y: e.clientY };
+});
+container.addEventListener('mouseup', () => isDragging = false);
+container.addEventListener('mouseleave', () => isDragging = false);
+container.addEventListener('wheel', e => {
+  orbitDist = Math.max(15, Math.min(80, orbitDist + e.deltaY * 0.05));
+});
+
+// Touch support
+container.addEventListener('touchstart', e => {
+  isDragging = true;
+  prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+});
+container.addEventListener('touchmove', e => {
+  if (!isDragging) return;
+  orbitAngle -= (e.touches[0].clientX - prevMouse.x) * 0.005;
+  orbitPitch = Math.max(0.1, Math.min(1.2, orbitPitch - (e.touches[0].clientY - prevMouse.y) * 0.005));
+  prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+});
+container.addEventListener('touchend', () => isDragging = false);
+
+// ============================================================
+// Nokia SMS logic
+// ============================================================
+let nokiaOn = false;
+let smsIndex = 0;
+const smsMessages = [
+  `SoilSMS 17/03 08:42\nSTATUS: Soil dry\n(34%) pH 6.1\nNUTRIENTS: N low\n(85mg/kg) P+K ok\nACTION: Add urea.\nRain in 4 days.\nPLANT: Maize/beans\nafter rain.`,
+  `SoilSMS 17/03 14:20\nSTATUS: Moisture\nrising (41%) pH 6.3\nTemp 26C humid 78%\nNUTRIENTS: All ok\nACTION: No action\nneeded. Conditions\nimproving.\nNEXT: Check in 6h`,
+  `SoilSMS 17/03 20:05\nALERT: Soil temp\ndrop to 18C.\nMoisture 52% good.\npH stable 6.2\nACTION: Cover young\nseedlings tonight.\nFrost risk LOW but\nmonitor closely.`,
+  `SoilSMS 18/03 06:30\nSTATUS: Overnight\nrain detected.\nMoisture 68% GOOD\npH 6.0 Temp 22C\nACTION: Perfect\nplanting window!\nSow maize today.\nNext SMS in 12h.`,
+];
+
+function toggleNokia() {
+  const screen = document.getElementById('nokia-screen');
+  const text = document.getElementById('nokia-text');
+  const hint = document.getElementById('nokia-hint');
+
+  if (!nokiaOn) {
+    nokiaOn = true;
+    screen.classList.add('lit');
+    text.textContent = smsMessages[smsIndex];
+    hint.textContent = 'TAP FOR NEXT SMS';
+    smsIndex = (smsIndex + 1) % smsMessages.length;
+  } else {
+    smsIndex = (smsIndex + 1) % smsMessages.length;
+    text.textContent = smsMessages[smsIndex - 1 < 0 ? smsMessages.length - 1 : smsIndex - 1];
+    // After cycling all, turn off
+    if (smsIndex === 0) {
+      nokiaOn = false;
+      screen.classList.remove('lit');
+      text.textContent = 'No new messages';
+      hint.textContent = 'TAP TO READ SMS';
+    }
+  }
+}
+
+// ============================================================
+// Sensor value simulation
+// ============================================================
+const sensorState = {
+  moisture: 34.2, ph: 6.1, soilTemp: 24.5, airTemp: 28.0,
+  humid: 72.0, n: 85, p: 30, k: 160
+};
+
+function updateSensors() {
+  sensorState.moisture += (Math.random() - 0.48) * 0.5;
+  sensorState.moisture = Math.max(15, Math.min(80, sensorState.moisture));
+  sensorState.ph += (Math.random() - 0.5) * 0.02;
+  sensorState.ph = Math.max(4.5, Math.min(8.0, sensorState.ph));
+  sensorState.soilTemp += (Math.random() - 0.5) * 0.1;
+  sensorState.airTemp += (Math.random() - 0.5) * 0.15;
+  sensorState.humid += (Math.random() - 0.5) * 0.3;
+  sensorState.humid = Math.max(30, Math.min(95, sensorState.humid));
+  sensorState.n += (Math.random() - 0.5) * 1;
+  sensorState.n = Math.max(20, Math.min(200, sensorState.n));
+  sensorState.p += (Math.random() - 0.5) * 0.5;
+  sensorState.k += (Math.random() - 0.5) * 1;
+
+  document.getElementById('v-moisture').textContent = sensorState.moisture.toFixed(1) + '%';
+  document.getElementById('v-ph').textContent = sensorState.ph.toFixed(1);
+  document.getElementById('v-soiltemp').textContent = sensorState.soilTemp.toFixed(1) + '°C';
+  document.getElementById('v-airtemp').textContent = sensorState.airTemp.toFixed(1) + '°C';
+  document.getElementById('v-humid').textContent = sensorState.humid.toFixed(1) + '%';
+  document.getElementById('v-n').textContent = Math.round(sensorState.n) + ' mg/kg';
+  document.getElementById('v-p').textContent = Math.round(sensorState.p) + ' mg/kg';
+  document.getElementById('v-k').textContent = Math.round(sensorState.k) + ' mg/kg';
+
+  const now = new Date();
+  document.getElementById('v-time').textContent =
+    now.getHours().toString().padStart(2, '0') + ':' +
+    now.getMinutes().toString().padStart(2, '0') + ':' +
+    now.getSeconds().toString().padStart(2, '0');
+}
+
+// ============================================================
+// Signal rings (radio waves from antenna)
+// ============================================================
+const signalRings = [];
+function createSignalRing() {
+  const geo = new THREE.RingGeometry(0.3, 0.35, 16);
+  const mat = new THREE.MeshBasicMaterial({ color: 0xf1c40f, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(geo, mat);
+  ring.position.copy(rpiGroup.position);
+  ring.position.y = 2.85;
+  ring.lookAt(towerGroup.position.x, 15, towerGroup.position.z);
+  scene.add(ring);
+  signalRings.push({ mesh: ring, scale: 1, opacity: 0.8 });
+}
+
+// ============================================================
+// Animation loop
+// ============================================================
+let time = 0;
+let particleTimer = 0;
+let signalTimer = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.016;
+  particleTimer += 0.016;
+  signalTimer += 0.016;
+
+  // Auto-rotate slowly when not dragging
+  if (!isDragging) {
+    orbitAngle += 0.001;
+  }
+
+  // Update camera
+  camera.position.x = Math.sin(orbitAngle) * Math.cos(orbitPitch) * orbitDist;
+  camera.position.y = Math.sin(orbitPitch) * orbitDist;
+  camera.position.z = Math.cos(orbitAngle) * Math.cos(orbitPitch) * orbitDist;
+  camera.lookAt(0, 2, 0);
+
+  // Animate clouds
+  clouds.forEach((c, i) => {
+    c.position.x += 0.008 * (i % 2 === 0 ? 1 : -1);
+    if (c.position.x > 60) c.position.x = -60;
+    if (c.position.x < -60) c.position.x = 60;
+  });
+
+  // LED blink
+  led.material.emissiveIntensity = Math.sin(time * 4) > 0 ? 1 : 0.1;
+  led.material.color.setHex(Math.sin(time * 4) > 0 ? 0x00ff00 : 0x004400);
+
+  // Tower light blink
+  towerLight.material.emissiveIntensity = Math.sin(time * 2) > 0 ? 0.8 : 0.1;
+
+  // Signal rings from RPi
+  if (signalTimer > 2.0) {
+    signalTimer = 0;
+    createSignalRing();
+  }
+  signalRings.forEach((r, i) => {
+    r.scale += 0.08;
+    r.opacity -= 0.008;
+    r.mesh.scale.set(r.scale, r.scale, r.scale);
+    r.mesh.material.opacity = Math.max(0, r.opacity);
+    if (r.opacity <= 0) {
+      scene.remove(r.mesh);
+      signalRings.splice(i, 1);
+    }
+  });
+
+  // Activate particles periodically
+  if (particleTimer > 1.5) {
+    particleTimer = 0;
+    const inactive = particles.find(p => !p.active);
+    if (inactive) {
+      inactive.active = true;
+      inactive.t = 0;
+      inactive.mesh.visible = true;
+    }
+  }
+
+  // Update particles
+  particles.forEach(p => {
+    if (!p.active) return;
+    p.t += p.speed;
+    if (p.t >= 1) {
+      p.active = false;
+      p.mesh.visible = false;
+      p.t = 0;
+      return;
+    }
+    const pos = getPointOnPath(p.path, p.t);
+    p.mesh.position.copy(pos);
+    // Pulse
+    const s = 1 + Math.sin(p.t * 20) * 0.3;
+    p.mesh.scale.set(s, s, s);
+  });
+
+  // Update sensors every ~second
+  if (Math.floor(time * 60) % 60 === 0) {
+    updateSensors();
+  }
+
+  // RPi device slight hover
+  rpiGroup.position.y = Math.sin(time * 0.5) * 0.05;
+
+  renderer.render(scene, camera);
+}
+
+// --- Resize ---
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// --- Start ---
+document.getElementById('info-overlay').addEventListener('click', () => {
+  document.getElementById('info-overlay').classList.add('hidden');
+});
+
+updateSensors();
+animate();
+</script>
+</body>
+</html>
