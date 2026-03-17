@@ -1,0 +1,13 @@
+services:
+  postgres-db:
+    image: postgres:latest
+    container_name: soilsms_postgres
+    environment:
+      POSTGRES_USER: mijn_gebruiker
+      POSTGRES_PASSWORD: mijn_wachtwoord
+      POSTGRES_DB: soilsms_db
+    ports:
+      # Veranderd naar 5433 op je host (links) -> 5432 in de container (rechts)
+      - "5433:5432"
+    volumes:
+      - ./start.sql:/docker-entrypoint-initdb.d/start.sql
