@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoilSMS — Contact &amp; Pricing</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Hero */
+  .hero {
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 20px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(124,252,0,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(52,152,219,0.05) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .hero-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(20px, 4vw, 36px);
+    color: #7cfc00;
+    text-shadow: 0 0 30px rgba(124,252,0,0.3);
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+  }
+  .hero-subtitle {
+    font-size: clamp(14px, 2vw, 18px);
+    color: #999;
+    max-width: 560px;
+    line-height: 1.6;
+  }
+  .hero-back {
+    display: inline-block;
+    margin-top: 20px;
+    font-size: 13px;
+    color: #7cfc00;
+    text-decoration: none;
+  }
+  .hero-back:hover { text-decoration: underline; }
+
+  /* Sections */
+  section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+  section h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(12px, 2vw, 18px);
+    color: #7cfc00;
+    margin-bottom: 32px;
+    text-shadow: 0 0 10px rgba(124,252,0,0.2);
+  }
+
+  /* Divider */
+  .divider {
+    width: 60px;
+    height: 3px;
+    background: #7cfc0033;
+    border-radius: 2px;
+    margin: 0 auto 0;
+  }
+
+  /* Pricing cards */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    margin-bottom: 12px;
+  }
+  .pricing-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .pricing-card:hover {
+    border-color: #7cfc0044;
+    transform: translateY(-2px);
+  }
+  .pricing-card.featured {
+    border-color: #7cfc0066;
+    position: relative;
+  }
+  .pricing-card.featured::after {
+    content: 'POPULAR';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    background: #7cfc00;
+    color: #0a0a0a;
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+  .pricing-tier {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .pricing-price {
+    font-size: 32px;
+    font-weight: 700;
+    color: #7cfc00;
+    margin-bottom: 4px;
+  }
+  .pricing-price span {
+    font-size: 14px;
+    color: #666;
+    font-weight: 400;
+  }
+  .pricing-desc {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  .pricing-features {
+    list-style: none;
+    text-align: left;
+    font-size: 13px;
+    color: #aaa;
+  }
+  .pricing-features li {
+    padding: 6px 0;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pricing-features li::before {
+    content: '>';
+    color: #7cfc00;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Contact form */
+  .contact-form {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 32px;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-group.full {
+    grid-column: 1 / -1;
+  }
+  .form-group label {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: #7cfc00;
+  }
+  .form-group input::placeholder,
+  .form-group textarea::placeholder {
+    color: #444;
+  }
+  .form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  .form-group select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .form-group select option {
+    background: #111;
+    color: #fff;
+  }
+
+  .form-submit {
+    display: inline-block;
+    padding: 14px 40px;
+    background: #7cfc00;
+    color: #0a0a0a;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 0 20px rgba(124,252,0,0.15);
+    margin-top: 8px;
+  }
+  .form-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgba(124,252,0,0.3);
+    background: #90ff20;
+  }
+
+  /* Confirmation popup */
+  .confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-overlay.visible {
+    display: flex;
+  }
+  .confirm-card {
+    background: #111;
+    border: 1px solid #7cfc0066;
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 420px;
+    box-shadow: 0 0 60px rgba(124,252,0,0.1);
+  }
+  .confirm-card .checkmark {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+  .confirm-card h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    color: #7cfc00;
+    margin-bottom: 12px;
+  }
+  .confirm-card p {
+    font-size: 14px;
+    color: #888;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .confirm-close {
+    padding: 10px 32px;
+    background: transparent;
+    border: 1px solid #7cfc00;
+    color: #7cfc00;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .confirm-close:hover {
+    background: #7cfc00;
+    color: #0a0a0a;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 40px 20px;
+    border-top: 1px solid #1a1a1a;
+    color: #555;
+    font-size: 13px;
+  }
+  footer a { color: #7cfc00; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 500px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== HERO ====== -->
+<div class="hero">
+  <h1 class="hero-title">Get SoilSMS</h1>
+  <p class="hero-subtitle">
+    Bring AI-powered soil monitoring to your farm.
+    Request a quote or ask about our deployment packages.
+  </p>
+  <a href="index.html" class="hero-back">&larr; Back to overview</a>
+</div>
+
+<!-- ====== PRICING ====== -->
+<section>
+  <h2>Pricing Plans</h2>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="pricing-tier">Starter</div>
+      <div class="pricing-price">$149 <span>/node</span></div>
+      <p class="pricing-desc">Perfect for small plots and pilot deployments.</p>
+      <ul class="pricing-features">
+        <li>1 sensor node (RPi + sensors)</li>
+        <li>SIM card + 6 months SMS</li>
+        <li>Cloud AI analysis</li>
+        <li>Daily SMS advisories</li>
+        <li>Email support</li>
+      </ul>
+    </div>
+    <div class="pricing-card featured">
+      <div class="pricing-tier">Farm</div>
+      <div class="pricing-price">$399 <span>/3 nodes</span></div>
+      <p class="pricing-desc">Cover multiple plots with zone-based insights.</p>
+      <ul class="pricing-features">
+        <li>3 sensor nodes</li>
+        <li>SIM cards + 12 months SMS</li>
+        <li>Cloud or local AI</li>
+        <li>Zone-based crop advisory</li>
+        <li>Priority support</li>
+      </ul>
+    </div>
+    <div class="pricing-card">
+      <div class="pricing-tier">Enterprise</div>
+      <div class="pricing-price">Custom</div>
+      <p class="pricing-desc">Large-scale deployments and cooperatives.</p>
+      <ul class="pricing-features">
+        <li>Unlimited nodes</li>
+        <li>Dedicated SMS gateway</li>
+        <li>On-premise AI server</li>
+        <li>API access + dashboard</li>
+        <li>On-site installation</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ====== CONTACT FORM ====== -->
+<section>
+  <h2>Request a Quote</h2>
+  <form class="contact-form" id="contact-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" placeholder="e.g. John Mwamba" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="john@example.com" required>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="org">Organisation / Farm Name</label>
+        <input type="text" id="org" placeholder="e.g. Kilimanjaro Agri Co-op">
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" placeholder="+255 7XX XXX XXX">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="plan">Interested In</label>
+        <select id="plan">
+          <option value="starter">Starter — $149/node</option>
+          <option value="farm" selected>Farm — $399/3 nodes</option>
+          <option value="enterprise">Enterprise — Custom pricing</option>
+          <option value="unsure">Not sure yet — advise me</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="nodes">Estimated Number of Nodes</label>
+        <input type="number" id="nodes" placeholder="e.g. 5" min="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group full">
+        <label for="message">Tell Us About Your Farm / Needs</label>
+        <textarea id="message" placeholder="Describe your farm size, crops, location, and any specific requirements..."></textarea>
+      </div>
+    </div>
+    <button type="submit" class="form-submit">SEND REQUEST</button>
+  </form>
+</section>
+
+<!-- Confirmation popup -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-card">
+    <div class="checkmark">&#10003;</div>
+    <h3>Request Sent!</h3>
+    <p>Thanks for your interest in SoilSMS. Our team will review your inquiry and get back to you within 48 hours via email.</p>
+    <button class="confirm-close" id="confirm-close">OK</button>
+  </div>
+</div>
+
+<footer>
+  <p>SoilSMS &mdash; Built for rural Tanzania, powered by open hardware and AI.</p>
+  <p style="margin-top:8px;">
+    <a href="index.html">Overview</a> &nbsp;&middot;&nbsp;
+    <a href="demo.html">3D Demo</a>
+  </p>
+</footer>
+
+<script>
+  document.getElementById('contact-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    document.getElementById('confirm-overlay').classList.add('visible');
+  });
+  document.getElementById('confirm-close').addEventListener('click', function() {
+    document.getElementById('confirm-overlay').classList.remove('visible');
+    document.getElementById('contact-form').reset();
+  });
+</script>
+
+</body>
+</html>
