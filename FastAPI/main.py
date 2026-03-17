@@ -21,6 +21,15 @@ def read_root():
 # Farmers
 @app.post("/farmers/", response_model=schemas.Farmer)
 def create_farmer(farmer: schemas.FarmerCreate, db: Session = Depends(database.get_db)):
+    db_farmer = db.query(models.Farmer).filter(models.Farmer.id == farmer.id).first()
+    if db_farmer:
+        # Update existing farmer if information changed
+        db_farmer.phone_number = farmer.phone_number
+        db_farmer.name = farmer.name
+        db.commit()
+        db.refresh(db_farmer)
+        return db_farmer
+
     db_farmer = models.Farmer(**farmer.dict())
     db.add(db_farmer)
     db.commit()
@@ -35,6 +44,17 @@ def read_farmers(skip: int = 0, limit: int = 100, db: Session = Depends(database
 # Farm Nodes
 @app.post("/nodes/", response_model=schemas.FarmNode)
 def create_node(node: schemas.FarmNodeCreate, db: Session = Depends(database.get_db)):
+    db_node = db.query(models.FarmNode).filter(models.FarmNode.node_id == node.node_id).first()
+    if db_node:
+        # Update existing node (location or crop type)
+        db_node.latitude = node.latitude
+        db_node.longitude = node.longitude
+        db_node.crop_type = node.crop_type
+        db_node.farmer_id = node.farmer_id
+        db.commit()
+        db.refresh(db_node)
+        return db_node
+
     db_node = models.FarmNode(**node.dict())
     db.add(db_node)
     db.commit()
