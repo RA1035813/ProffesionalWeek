@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SoilSMS — Farm World Demo</title>
+<title>SoilSMS — Smart Soil Monitoring for Rural Tanzania</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -16,1365 +16,381 @@
     overflow-x: hidden;
   }
 
-  #canvas-container {
-    width: 100%;
-    height: 100vh;
+  /* Hero */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
     position: relative;
-    cursor: grab;
+    overflow: hidden;
   }
-  #canvas-container:active { cursor: grabbing; }
-  canvas { display: block; }
-
-  /* HUD */
-  #hud {
+  .hero::before {
+    content: '';
     position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 10;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(124,252,0,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(52,152,219,0.05) 0%, transparent 50%);
     pointer-events: none;
   }
-  #hud h1 {
+  .hero-title {
     font-family: 'Press Start 2P', monospace;
-    font-size: 18px;
+    font-size: clamp(28px, 5vw, 52px);
     color: #7cfc00;
-    text-shadow: 0 0 10px #7cfc0066;
-    margin-bottom: 6px;
+    text-shadow: 0 0 30px rgba(124,252,0,0.3);
+    margin-bottom: 16px;
+    letter-spacing: 2px;
   }
-  #hud p {
-    font-size: 12px;
-    color: #aaa;
-    max-width: 340px;
+  .hero-subtitle {
+    font-size: clamp(16px, 2.5vw, 22px);
+    color: #999;
+    max-width: 600px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+  .hero-cta {
+    display: inline-block;
+    padding: 16px 48px;
+    background: #7cfc00;
+    color: #0a0a0a;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s;
+    box-shadow: 0 0 30px rgba(124,252,0,0.2);
+  }
+  .hero-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 50px rgba(124,252,0,0.4);
+    background: #90ff20;
   }
 
-  /* Sensor panel */
-  #sensor-panel {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 10;
-    background: rgba(0,0,0,0.75);
-    border: 1px solid #7cfc0044;
-    border-radius: 12px;
-    padding: 16px;
-    min-width: 220px;
-    backdrop-filter: blur(8px);
+  /* Flow diagram */
+  .flow-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 40px 0 20px;
+    flex-wrap: wrap;
   }
-  #sensor-panel h3 {
+  .flow-node {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background: rgba(255,255,255,0.03);
+    font-size: 13px;
+    color: #ccc;
+  }
+  .flow-node .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .flow-arrow {
+    color: #444;
+    font-size: 18px;
+  }
+
+  /* Sections */
+  section {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 80px 24px;
+  }
+  section h2 {
     font-family: 'Press Start 2P', monospace;
-    font-size: 10px;
+    font-size: clamp(14px, 2.5vw, 20px);
     color: #7cfc00;
+    margin-bottom: 32px;
+    text-shadow: 0 0 10px rgba(124,252,0,0.2);
+  }
+
+  /* Cards grid */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 28px;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .card:hover {
+    border-color: #7cfc0044;
+    transform: translateY(-2px);
+  }
+  .card-icon {
+    font-size: 28px;
+    margin-bottom: 14px;
+    display: block;
+  }
+  .card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
     margin-bottom: 10px;
   }
-  .sensor-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    font-size: 13px;
-  }
-  .sensor-row .label { color: #888; }
-  .sensor-row .value { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
-
-  /* Nokia phone */
-  #nokia-container {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    z-index: 20;
-    cursor: pointer;
-    transition: transform 0.3s;
-  }
-  #nokia-container:hover { transform: scale(1.05); }
-
-  .nokia-phone {
-    width: 180px;
-    background: #1a1a2e;
-    border-radius: 20px 20px 30px 30px;
-    border: 2px solid #333;
-    padding: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 #2a2a4e;
-  }
-  .nokia-brand {
-    text-align: center;
-    font-size: 9px;
-    color: #555;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .nokia-screen {
-    background: #3a5a2a;
-    border-radius: 4px;
-    padding: 8px;
-    min-height: 120px;
-    max-height: 180px;
-    overflow-y: auto;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 7px;
+  .card p {
+    font-size: 14px;
+    color: #888;
     line-height: 1.6;
-    color: #1a2e1a;
-    border: 2px solid #2a2a2a;
   }
-  .nokia-screen.lit {
-    background: #84c464;
-    color: #1a3a0a;
-    box-shadow: 0 0 20px #84c46444;
+
+  /* Architecture */
+  .arch-block {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 28px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #aaa;
+    overflow-x: auto;
+    white-space: pre;
   }
-  .nokia-screen .sms-text {
+  .arch-block .hl-green { color: #7cfc00; }
+  .arch-block .hl-blue { color: #3498db; }
+  .arch-block .hl-yellow { color: #f1c40f; }
+
+  /* Hardware table */
+  .hw-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .hw-table th {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid #333;
+    color: #7cfc00;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .hw-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #1a1a1a;
+    color: #aaa;
+  }
+  .hw-table tr:hover td {
+    color: #ddd;
+    background: rgba(255,255,255,0.02);
+  }
+
+  /* SMS example */
+  .sms-examples {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+  .sms-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #222;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .sms-box-header {
+    padding: 12px 20px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .sms-box-header.send { background: rgba(241,196,15,0.1); color: #f1c40f; }
+  .sms-box-header.recv { background: rgba(124,252,0,0.08); color: #7cfc00; }
+  .sms-box pre {
+    padding: 16px 20px;
+    font-size: 12px;
+    color: #aaa;
+    line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
   }
-  .nokia-keypad {
-    margin-top: 10px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-  }
-  .nokia-key {
-    background: #2a2a4e;
-    border: 1px solid #3a3a5e;
-    border-radius: 4px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 7px;
-    color: #666;
-  }
-  .nokia-nav {
-    margin-top: 8px;
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-  }
-  .nokia-nav-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #2a2a4e;
-    border: 1px solid #3a3a5e;
-  }
-  .nokia-nav-center {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #3a3a6e;
-    border: 2px solid #4a4a7e;
-  }
-  .nokia-hint {
-    text-align: center;
-    font-size: 9px;
-    color: #7cfc00;
-    margin-top: 8px;
-    animation: blink 1.5s infinite;
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
 
-  /* AI settings panel */
-  #ai-panel {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    z-index: 20;
-    background: rgba(0,0,0,0.8);
-    border: 1px solid #3498db44;
-    border-radius: 12px;
-    padding: 16px;
-    width: 300px;
-    backdrop-filter: blur(8px);
-  }
-  #ai-panel h3 {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
-    color: #3498db;
-    margin-bottom: 10px;
-  }
-  #ai-panel label {
-    font-size: 11px;
-    color: #888;
-    display: block;
-    margin-bottom: 4px;
-  }
-  #ai-panel input, #ai-panel select {
-    width: 100%;
-    background: #1a1a2e;
-    border: 1px solid #333;
-    border-radius: 6px;
-    padding: 6px 8px;
-    color: #fff;
-    font-size: 12px;
-    font-family: 'Inter', sans-serif;
-    margin-bottom: 8px;
-    outline: none;
-  }
-  #ai-panel input:focus, #ai-panel select:focus {
-    border-color: #3498db;
-  }
-  #ai-panel input::placeholder { color: #555; }
-  .ai-mode-toggle {
-    display: flex;
-    gap: 0;
-    margin-bottom: 10px;
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid #333;
-  }
-  .ai-mode-btn {
-    flex: 1;
-    padding: 6px 0;
+  /* Footer */
+  footer {
     text-align: center;
-    font-size: 10px;
-    font-family: 'Press Start 2P', monospace;
-    cursor: pointer;
-    background: #1a1a2e;
-    color: #666;
-    border: none;
-    transition: all 0.2s;
+    padding: 40px 20px;
+    border-top: 1px solid #1a1a1a;
+    color: #555;
+    font-size: 13px;
   }
-  .ai-mode-btn.active {
-    background: #3498db;
-    color: #fff;
-  }
-  #ai-analyze-btn {
-    width: 100%;
-    padding: 8px;
-    background: #3498db;
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  #ai-analyze-btn:hover { background: #2980b9; }
-  #ai-analyze-btn:disabled {
-    background: #333;
-    color: #666;
-    cursor: not-allowed;
-  }
-  #ai-status {
-    font-size: 10px;
-    color: #666;
-    margin-top: 6px;
-    min-height: 14px;
-  }
-  .llm-fields { transition: opacity 0.3s; }
-  .llm-fields.disabled { opacity: 0.3; pointer-events: none; }
+  footer a { color: #7cfc00; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
 
-  /* Flow legend */
-  #flow-legend {
-    position: absolute;
-    top: auto;
-    bottom: 240px;
-    left: 20px;
-    z-index: 10;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    font-size: 10px;
-    color: #888;
-  }
-  .flow-step {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-  }
-  .flow-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-  }
-  .flow-arrow { color: #555; font-size: 8px; }
-
-  /* Info overlay */
-  #info-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.5s;
-    cursor: pointer;
-  }
-  #info-overlay.hidden { opacity: 0; pointer-events: none; }
-  .info-card {
-    text-align: center;
-    max-width: 500px;
-    padding: 40px;
-  }
-  .info-card h1 {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 24px;
-    color: #7cfc00;
-    margin-bottom: 16px;
-    text-shadow: 0 0 20px #7cfc0066;
-  }
-  .info-card p {
-    color: #aaa;
-    line-height: 1.7;
-    margin-bottom: 20px;
-  }
-  .info-card .start-hint {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 10px;
-    color: #7cfc00;
-    animation: blink 1.5s infinite;
+  /* Divider */
+  .divider {
+    width: 60px;
+    height: 3px;
+    background: #7cfc0033;
+    border-radius: 2px;
+    margin: 0 auto 60px;
   }
 </style>
 </head>
 <body>
 
-<!-- Landing overlay -->
-<div id="info-overlay">
-  <div class="info-card">
-    <h1>SoilSMS</h1>
-    <p>
-      A solar-powered Raspberry Pi reads soil sensors on a Tanzanian farm.
-      Data flies over 2G SMS to a server that runs AI analysis, then sends
-      crop advice back &mdash; all on a basic Nokia phone. No internet needed.
-    </p>
-    <p style="font-size:13px; color:#666;">
-      Drag to orbit &bull; Scroll to zoom &bull; Click Nokia to read SMS
-    </p>
-    <div class="start-hint">[ CLICK TO ENTER ]</div>
+<!-- ====== HERO ====== -->
+<div class="hero">
+  <h1 class="hero-title">SoilSMS</h1>
+  <p class="hero-subtitle">
+    SMS-based soil monitoring and AI crop advisory for rural Tanzania.
+    No internet required on the farm &mdash; works on 2G GSM.
+  </p>
+
+  <div class="flow-strip">
+    <div class="flow-node"><div class="dot" style="background:#e74c3c;"></div> RPi Sensors</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node"><div class="dot" style="background:#f1c40f;"></div> SMS (2G)</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node"><div class="dot" style="background:#3498db;"></div> AI Server</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node"><div class="dot" style="background:#7cfc00;"></div> Farmer's Phone</div>
   </div>
+
+  <a href="demo.html" class="hero-cta">LAUNCH 3D DEMO</a>
 </div>
 
-<div id="canvas-container">
-  <!-- HUD -->
-  <div id="hud">
-    <h1>SoilSMS</h1>
-    <p>RPi Zero 2 W &rarr; SMS &rarr; AI Server &rarr; SMS &rarr; Farmer</p>
-  </div>
-
-  <!-- Sensor readout -->
-  <div id="sensor-panel">
-    <h3>&#9670; LIVE SENSORS</h3>
-    <div class="sensor-row"><span class="label">Moisture</span><span class="value" id="v-moisture">34.2%</span></div>
-    <div class="sensor-row"><span class="label">pH</span><span class="value" id="v-ph">6.1</span></div>
-    <div class="sensor-row"><span class="label">Soil Temp</span><span class="value" id="v-soiltemp">24.5&deg;C</span></div>
-    <div class="sensor-row"><span class="label">Air Temp</span><span class="value" id="v-airtemp">28.0&deg;C</span></div>
-    <div class="sensor-row"><span class="label">Humidity</span><span class="value" id="v-humid">72.0%</span></div>
-    <div class="sensor-row"><span class="label">Nitrogen</span><span class="value" id="v-n">85 mg/kg</span></div>
-    <div class="sensor-row"><span class="label">Phosphorus</span><span class="value" id="v-p">30 mg/kg</span></div>
-    <div class="sensor-row"><span class="label">Potassium</span><span class="value" id="v-k">160 mg/kg</span></div>
-    <div style="margin-top:10px; font-size:10px; color:#555;">Node: FARM001 &bull; <span id="v-time">--:--</span></div>
-  </div>
-
-  <!-- Nokia phone -->
-  <div id="nokia-container" onclick="toggleNokia()">
-    <div class="nokia-phone">
-      <div class="nokia-brand">NOKIA</div>
-      <div class="nokia-screen" id="nokia-screen">
-        <div class="sms-text" id="nokia-text">No new messages</div>
-      </div>
-      <div class="nokia-nav">
-        <div class="nokia-nav-btn"></div>
-        <div class="nokia-nav-center"></div>
-        <div class="nokia-nav-btn"></div>
-      </div>
-      <div class="nokia-keypad">
-        <div class="nokia-key">1</div><div class="nokia-key">2</div><div class="nokia-key">3</div>
-        <div class="nokia-key">4</div><div class="nokia-key">5</div><div class="nokia-key">6</div>
-        <div class="nokia-key">7</div><div class="nokia-key">8</div><div class="nokia-key">9</div>
-        <div class="nokia-key">*</div><div class="nokia-key">0</div><div class="nokia-key">#</div>
-      </div>
-      <div class="nokia-hint" id="nokia-hint">TAP TO READ SMS</div>
+<!-- ====== HOW IT WORKS ====== -->
+<section>
+  <h2>How It Works</h2>
+  <div class="cards">
+    <div class="card">
+      <span class="card-icon">1.</span>
+      <h3>Sense</h3>
+      <p>A Raspberry Pi Zero 2 W reads 5 sensor types: soil moisture, pH, soil temperature (DS18B20), air temp/humidity (DHT22), and NPK nutrients via RS485 Modbus. Powered by a 12V solar panel.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">2.</span>
+      <h3>Send via SMS</h3>
+      <p>Sensor data is serialized into compact JSON and sent as an SMS using AT commands over a SIM800L GSM module. Works on any Tanzanian carrier (Vodacom, Airtel) over basic 2G.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">3.</span>
+      <h3>AI Analysis</h3>
+      <p>The server receives the SMS, parses the JSON, fetches a 7-day weather forecast from Open-Meteo, then sends everything to an LLM (local Ollama or OpenRouter cloud) with an agronomist prompt.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">4.</span>
+      <h3>Advise the Farmer</h3>
+      <p>The AI generates a concise, actionable advisory (fits in 3-4 SMS messages) covering soil status, nutrients, recommended actions, crop suggestions, and planting timing. Sent back via SMS.</p>
     </div>
   </div>
+</section>
 
-  <!-- AI analysis panel -->
-  <div id="ai-panel">
-    <h3>&#9670; AI ANALYSIS</h3>
-    <div class="ai-mode-toggle">
-      <button class="ai-mode-btn active" onclick="setAIMode('demo')" id="btn-demo">DEMO</button>
-      <button class="ai-mode-btn" onclick="setAIMode('llm')" id="btn-llm">LLM</button>
+<div class="divider"></div>
+
+<!-- ====== ARCHITECTURE ====== -->
+<section>
+  <h2>Architecture</h2>
+  <div class="arch-block"><span class="hl-green">[Farm / RPi Node]</span>                        <span class="hl-blue">[Server]</span>
+  Sensors &rarr; sensor_node.py             analysis_server.py
+              &boxur; Reads soil data              &boxur; Parses SMS JSON
+              &boxur; JSON via SMS <span class="hl-yellow">&rarr;&rarr;&rarr;&rarr;&rarr;&rarr;&rarr;</span> &boxur; Fetches weather (Open-Meteo)
+                                              &boxur; Analyses with LLM
+                                              &boxur; Replies to farmer via SMS
+                                                      &boxv;
+                                               <span class="hl-green">[Farmer's phone]</span>
+                                               Receives plain-text
+                                               crop advisory</div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ====== HARDWARE ====== -->
+<section>
+  <h2>Hardware</h2>
+  <table class="hw-table">
+    <thead>
+      <tr><th>COMPONENT</th><th>MODEL</th><th>PURPOSE</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Microcontroller</td><td>Raspberry Pi Zero 2 W</td><td>Main controller</td></tr>
+      <tr><td>Moisture sensor</td><td>Capacitive (3.3V)</td><td>Soil moisture %</td></tr>
+      <tr><td>ADC</td><td>ADS1115 (I2C)</td><td>Reads moisture + pH analog</td></tr>
+      <tr><td>pH sensor</td><td>Analog pH probe + module</td><td>Soil pH level</td></tr>
+      <tr><td>Air temp/humidity</td><td>DHT22</td><td>Air conditions</td></tr>
+      <tr><td>Soil temperature</td><td>DS18B20 (1-Wire)</td><td>Soil temp</td></tr>
+      <tr><td>NPK sensor</td><td>RS485 Modbus RTU (JXBS-3001)</td><td>Nitrogen, Phosphorus, Potassium</td></tr>
+      <tr><td>GSM module</td><td>SIM800L / SIM7600</td><td>SMS communication</td></tr>
+      <tr><td>Power</td><td>12V solar + step-down to 5V</td><td>Off-grid power</td></tr>
+      <tr><td>SIM card</td><td>Any Tanzanian carrier</td><td>2G SMS</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="divider"></div>
+
+<!-- ====== SMS EXAMPLES ====== -->
+<section>
+  <h2>Example SMS</h2>
+  <div class="sms-examples">
+    <div class="sms-box">
+      <div class="sms-box-header send">NODE &rarr; SERVER (RAW JSON)</div>
+      <pre>{"node_id":"FARM001","timestamp":1718000000,
+"moisture_pct":34.2,"ph":6.1,
+"soil_temp_c":24.5,"air_temp_c":28.0,
+"air_humid_pct":72.0,
+"nitrogen_mg_kg":85,
+"phosphorus_mg_kg":30,
+"potassium_mg_kg":160}</pre>
     </div>
-    <div class="llm-fields disabled" id="llm-fields">
-      <label>OpenRouter API Key</label>
-      <input type="password" id="api-key" placeholder="sk-or-..." autocomplete="off">
-      <label>Model</label>
-      <select id="llm-model">
-        <optgroup label="Free (no cost)">
-          <option value="openrouter/free">Free Models Router (auto)</option>
-          <option value="stepfun/step-3.5-flash:free">StepFun Step 3.5 Flash</option>
-          <option value="minimax/minimax-m2.5:free">MiniMax M2.5</option>
-          <option value="nvidia/nemotron-3-nano-30b-a3b:free">NVIDIA Nemotron 3 Nano 30B</option>
-          <option value="arcee-ai/trinity-large-preview:free">Arcee Trinity Large</option>
-          <option value="liquid/lfm-2.5-1.2b-instruct:free">LiquidAI LFM 2.5 1.2B</option>
-        </optgroup>
-        <optgroup label="Paid">
-          <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
-          <option value="meta-llama/llama-4-maverick">Llama 4 Maverick</option>
-          <option value="mistralai/mistral-small-3.1-24b-instruct">Mistral Small 3.1</option>
-          <option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
-          <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
-          <option value="qwen/qwen3-8b">Qwen3 8B</option>
-        </optgroup>
-      </select>
+    <div class="sms-box">
+      <div class="sms-box-header recv">SERVER &rarr; FARMER (ADVISORY)</div>
+      <pre>SoilSMS 12/06 08:42 UTC
+STATUS: Soil is dry (34%) and slightly acidic (pH 6.1).
+NUTRIENTS: Nitrogen is low (85 mg/kg). Phosphorus and potassium are adequate.
+ACTION: Add nitrogen fertilizer before next rain. Do not irrigate this week as rain is expected.
+PLANT: Best suited for maize or beans.
+TIMING: Plant in 5-7 days after forecasted rain.</pre>
     </div>
-    <button id="ai-analyze-btn" onclick="runAnalysis()">ANALYZE SENSORS</button>
-    <div id="ai-status"></div>
   </div>
+</section>
 
-  <!-- Flow legend -->
-  <div id="flow-legend">
-    <div class="flow-step"><div class="flow-dot" style="background:#e74c3c;"></div> RPi</div>
-    <span class="flow-arrow">&#x2192;</span>
-    <div class="flow-step"><div class="flow-dot" style="background:#f1c40f;"></div> SMS</span></div>
-    <span class="flow-arrow">&#x2192;</span>
-    <div class="flow-step"><div class="flow-dot" style="background:#3498db;"></div> AI</div>
-    <span class="flow-arrow">&#x2192;</span>
-    <div class="flow-step"><div class="flow-dot" style="background:#7cfc00;"></div> Farmer</div>
+<div class="divider"></div>
+
+<!-- ====== SERVER MODES ====== -->
+<section>
+  <h2>Server Modes</h2>
+  <div class="cards" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+    <div class="card">
+      <h3>Local AI (Ollama)</h3>
+      <p>Run Mistral or other models locally on the server. No API key needed, fully offline. Set <code style="color:#7cfc00;">USE_LOCAL_AI=true</code> in .env.</p>
+    </div>
+    <div class="card">
+      <h3>Cloud AI (OpenRouter)</h3>
+      <p>Use any model via OpenRouter API, including free tiers like Arcee Trinity Large. Set <code style="color:#3498db;">USE_LOCAL_AI=false</code> and provide your API key.</p>
+    </div>
+    <div class="card">
+      <h3>SMS: GSM Modem</h3>
+      <p>Direct serial connection to a SIM800L modem. Polls for incoming SMS every 60 seconds. No external dependencies.</p>
+    </div>
+    <div class="card">
+      <h3>SMS: Africa's Talking</h3>
+      <p>Use the Africa's Talking API as an SMS gateway. Runs a Flask webhook server for incoming messages.</p>
+    </div>
   </div>
-</div>
+</section>
+
+<footer>
+  <p>SoilSMS &mdash; Built for rural Tanzania, powered by open hardware and AI.</p>
+  <p style="margin-top:8px;">
+    <a href="demo.html">3D Demo</a>
+  </p>
+</footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-// ============================================================
-// SoilSMS Farm World — 3D Demo
-// ============================================================
-
-const container = document.getElementById('canvas-container');
-const scene = new THREE.Scene();
-// Warm Tanzanian sky — hazy golden-blue
-scene.background = new THREE.Color(0x9ec8e0);
-scene.fog = new THREE.FogExp2(0xc8b890, 0.006);
-
-const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
-camera.position.set(12, 8, 14);
-camera.lookAt(0, 1, 0);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-container.appendChild(renderer.domElement);
-
-// --- Lights (hot equatorial sun) ---
-scene.add(new THREE.AmbientLight(0xffe8c0, 0.55));
-
-const sunLight = new THREE.DirectionalLight(0xfff0c0, 1.4);
-sunLight.position.set(30, 50, 20);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(2048, 2048);
-sunLight.shadow.camera.left = -50;
-sunLight.shadow.camera.right = 50;
-sunLight.shadow.camera.top = 50;
-sunLight.shadow.camera.bottom = -50;
-scene.add(sunLight);
-// Warm hemisphere: hot sky above, red earth below
-scene.add(new THREE.HemisphereLight(0xdec88a, 0x8b4513, 0.45));
-
-// --- Ground (Tanzanian red laterite earth with dry savanna) ---
-const groundGeo = new THREE.PlaneGeometry(200, 200, 50, 50);
-const posAttr = groundGeo.attributes.position;
-for (let i = 0; i < posAttr.count; i++) {
-  const x = posAttr.getX(i), y = posAttr.getY(i);
-  posAttr.setZ(i, Math.sin(x * 0.05) * 0.8 + Math.cos(y * 0.04) * 0.6 + Math.random() * 0.15);
-}
-groundGeo.computeVertexNormals();
-// Vertex colors: mix red earth and dry yellow grass
-const groundColors = new Float32Array(posAttr.count * 3);
-for (let i = 0; i < posAttr.count; i++) {
-  const x = posAttr.getX(i), y = posAttr.getY(i);
-  const dist = Math.sqrt(x * x + y * y);
-  const noise = Math.sin(x * 0.3) * Math.cos(y * 0.2) * 0.5 + 0.5;
-  // Near farm = darker tilled soil, far = dry savanna mix
-  if (dist < 12) {
-    // Red-brown tilled earth
-    groundColors[i*3]   = 0.36 + noise * 0.06;
-    groundColors[i*3+1] = 0.22 + noise * 0.04;
-    groundColors[i*3+2] = 0.1 + noise * 0.02;
-  } else {
-    // Savanna: mix of dry yellow grass and red earth
-    const grassMix = noise;
-    groundColors[i*3]   = 0.55 * grassMix + 0.5 * (1-grassMix);
-    groundColors[i*3+1] = 0.45 * grassMix + 0.28 * (1-grassMix);
-    groundColors[i*3+2] = 0.15 * grassMix + 0.12 * (1-grassMix);
-  }
-}
-groundGeo.setAttribute('color', new THREE.BufferAttribute(groundColors, 3));
-const ground = new THREE.Mesh(groundGeo, new THREE.MeshLambertMaterial({ vertexColors: true }));
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
-scene.add(ground);
-
-// --- Farm soil patch (dark tilled Tanzanian earth) ---
-const soilPatch = new THREE.Mesh(
-  new THREE.PlaneGeometry(18, 12, 8, 8),
-  new THREE.MeshLambertMaterial({ color: 0x6b3420 })
-);
-soilPatch.rotation.x = -Math.PI / 2;
-soilPatch.position.set(0, 0.06, 0);
-soilPatch.receiveShadow = true;
-scene.add(soilPatch);
-
-// --- Dry grass tufts scattered across savanna ---
-function createGrassTuft(x, z) {
-  const blades = 4 + Math.floor(Math.random() * 5);
-  for (let i = 0; i < blades; i++) {
-    const h = 0.3 + Math.random() * 0.5;
-    const blade = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.05, h),
-      new THREE.MeshLambertMaterial({
-        color: Math.random() > 0.3 ? 0xb8a050 : 0x8a7a30,
-        side: THREE.DoubleSide
-      })
-    );
-    blade.position.set(x + (Math.random()-0.5)*0.4, h/2, z + (Math.random()-0.5)*0.4);
-    blade.rotation.y = Math.random() * Math.PI;
-    blade.rotation.z = (Math.random()-0.5) * 0.3;
-    scene.add(blade);
-  }
-}
-for (let i = 0; i < 120; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const dist = 12 + Math.random() * 50;
-  createGrassTuft(Math.cos(angle)*dist, Math.sin(angle)*dist);
-}
-
-// --- Crop rows (maize — taller, with drooping leaves) ---
-function createCropRow(x, z, count) {
-  for (let i = 0; i < count; i++) {
-    const h = 1.0 + Math.random() * 1.4;
-    const stalk = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.04, 0.07, h, 5),
-      new THREE.MeshLambertMaterial({ color: 0x4a8a28 })
-    );
-    stalk.position.set(x + i * 1.2 - count * 0.6, h / 2, z);
-    stalk.castShadow = true;
-    scene.add(stalk);
-
-    // Maize leaves (2-3 per stalk, drooping)
-    const leafCount = 2 + Math.floor(Math.random() * 2);
-    for (let l = 0; l < leafCount; l++) {
-      const leaf = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.8, 0.12),
-        new THREE.MeshLambertMaterial({ color: 0x5aaa38, side: THREE.DoubleSide })
-      );
-      leaf.position.set(x + i * 1.2 - count * 0.6, h * (0.4 + l * 0.2), z);
-      leaf.rotation.y = Math.random() * Math.PI;
-      leaf.rotation.z = 0.2 + Math.random() * 0.4;
-      scene.add(leaf);
-    }
-  }
-}
-for (let row = -4; row <= 4; row += 2) createCropRow(0, row, 12);
-
-// --- Kilimanjaro in the distance ---
-const kiliGroup = new THREE.Group();
-kiliGroup.position.set(-70, 0, -80);
-// Main mountain body
-const kiliGeo = new THREE.ConeGeometry(30, 22, 8);
-const kiliMat = new THREE.MeshLambertMaterial({ color: 0x6a7a8a });
-const kiliMountain = new THREE.Mesh(kiliGeo, kiliMat);
-kiliMountain.position.y = 11;
-kiliGroup.add(kiliMountain);
-// Snow cap
-const snowGeo = new THREE.ConeGeometry(12, 6, 8);
-const snowMat = new THREE.MeshLambertMaterial({ color: 0xf0f0ff });
-const snowCap = new THREE.Mesh(snowGeo, snowMat);
-snowCap.position.y = 20;
-kiliGroup.add(snowCap);
-// Secondary peak (Mawenzi)
-const mawenzi = new THREE.Mesh(
-  new THREE.ConeGeometry(14, 14, 6),
-  new THREE.MeshLambertMaterial({ color: 0x5a6a7a })
-);
-mawenzi.position.set(22, 7, 5);
-kiliGroup.add(mawenzi);
-scene.add(kiliGroup);
-
-// --- Distant hills (typical Tanzanian rolling landscape) ---
-function createHill(x, z, radius, height, color) {
-  const hill = new THREE.Mesh(
-    new THREE.SphereGeometry(radius, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
-    new THREE.MeshLambertMaterial({ color })
-  );
-  hill.position.set(x, 0, z);
-  hill.scale.y = height / radius;
-  scene.add(hill);
-}
-createHill(50, -50, 20, 6, 0x7a8a5a);
-createHill(-50, -60, 25, 8, 0x8a9060);
-createHill(70, 40, 18, 5, 0x6a7a4a);
-createHill(-60, 50, 22, 7, 0x7a8050);
-
-// --- Red rocks / boulders (laterite outcrops) ---
-function createRock(x, z, s) {
-  const rock = new THREE.Mesh(
-    new THREE.DodecahedronGeometry(s, 0),
-    new THREE.MeshLambertMaterial({ color: 0x8b4525 + Math.floor(Math.random() * 0x151515) })
-  );
-  rock.position.set(x, s * 0.4, z);
-  rock.rotation.set(Math.random(), Math.random(), Math.random());
-  rock.castShadow = true;
-  scene.add(rock);
-}
-[[12, -8, 0.5], [-10, -10, 0.7], [14, 7, 0.4], [-8, 10, 0.6],
- [22, -5, 0.3], [-14, -6, 0.5], [8, 14, 0.35]
-].forEach(([x,z,s]) => createRock(x,z,s));
-
-// ============================================================
-// RPi Sensor Device — tall wooden stake with small computer box
-// ============================================================
-const rpiGroup = new THREE.Group();
-rpiGroup.position.set(-3, 0, -2);
-
-// Wooden stake (main structure)
-const stake = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.04, 0.06, 2.4, 6),
-  new THREE.MeshLambertMaterial({ color: 0x8B6914 })
-);
-stake.position.y = 1.2;
-stake.castShadow = true;
-rpiGroup.add(stake);
-
-// Small RPi enclosure box on the stake
-const rpiBox = new THREE.Mesh(
-  new THREE.BoxGeometry(0.4, 0.25, 0.3),
-  new THREE.MeshPhongMaterial({ color: 0x2c8c3c, specular: 0x222222 })
-);
-rpiBox.position.y = 2.0;
-rpiBox.castShadow = true;
-rpiGroup.add(rpiBox);
-
-// Tiny solar panel on top of box
-const solar = new THREE.Mesh(
-  new THREE.BoxGeometry(0.5, 0.02, 0.35),
-  new THREE.MeshPhongMaterial({ color: 0x1a1a4a, specular: 0x4444aa, shininess: 80 })
-);
-solar.position.y = 2.2;
-solar.rotation.z = 0.15;
-rpiGroup.add(solar);
-
-// Thin antenna wire
-const antenna = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.01, 0.01, 0.6, 4),
-  new THREE.MeshLambertMaterial({ color: 0xcccccc })
-);
-antenna.position.set(0.15, 2.5, 0);
-rpiGroup.add(antenna);
-
-// Antenna tip (red bead)
-const tip = new THREE.Mesh(
-  new THREE.SphereGeometry(0.03, 8, 8),
-  new THREE.MeshPhongMaterial({ color: 0xff3333, emissive: 0xff0000, emissiveIntensity: 0.5 })
-);
-tip.position.set(0.15, 2.85, 0);
-rpiGroup.add(tip);
-
-// Two soil probes going into ground
-for (let i = -1; i <= 1; i += 2) {
-  const probe = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.015, 0.015, 0.5, 6),
-    new THREE.MeshLambertMaterial({ color: 0x666666 })
-  );
-  probe.position.set(i * 0.12, -0.05, 0.1);
-  rpiGroup.add(probe);
-}
-
-// Tiny LED on box face
-const ledGeo = new THREE.SphereGeometry(0.025, 8, 8);
-const ledMat = new THREE.MeshPhongMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 1 });
-const led = new THREE.Mesh(ledGeo, ledMat);
-led.position.set(-0.12, 2.02, 0.16);
-rpiGroup.add(led);
-
-// Thin wire from box down to probes
-const wire = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.008, 0.008, 1.6, 4),
-  new THREE.MeshLambertMaterial({ color: 0x444444 })
-);
-wire.position.set(0, 1.1, 0.1);
-rpiGroup.add(wire);
-
-scene.add(rpiGroup);
-
-// --- Cell Tower ---
-const towerGroup = new THREE.Group();
-towerGroup.position.set(20, 0, -15);
-
-const legMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
-for (let i = 0; i < 3; i++) {
-  const angle = (i / 3) * Math.PI * 2;
-  const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.15, 14, 6), legMat);
-  leg.position.set(Math.cos(angle) * 0.8, 7, Math.sin(angle) * 0.8);
-  leg.castShadow = true;
-  towerGroup.add(leg);
-}
-for (let h = 2; h < 14; h += 2) {
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.06, 0.06), legMat);
-  bar.position.y = h;
-  bar.rotation.y = h * 0.5;
-  towerGroup.add(bar);
-}
-for (let i = 0; i < 3; i++) {
-  const angle = (i / 3) * Math.PI * 2;
-  const panel = new THREE.Mesh(
-    new THREE.BoxGeometry(0.6, 1.2, 0.1),
-    new THREE.MeshPhongMaterial({ color: 0xdddddd })
-  );
-  panel.position.set(Math.cos(angle) * 1.0, 14, Math.sin(angle) * 1.0);
-  panel.rotation.y = angle;
-  panel.castShadow = true;
-  towerGroup.add(panel);
-}
-const towerLightMat = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 });
-const towerLight = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), towerLightMat);
-towerLight.position.y = 15;
-towerGroup.add(towerLight);
-scene.add(towerGroup);
-
-// --- Server building ---
-const serverGroup = new THREE.Group();
-serverGroup.position.set(20, 0, 18);
-
-const building = new THREE.Mesh(
-  new THREE.BoxGeometry(4, 3, 3),
-  new THREE.MeshPhongMaterial({ color: 0x4a4a6a })
-);
-building.position.y = 1.5;
-building.castShadow = true;
-serverGroup.add(building);
-
-const roof = new THREE.Mesh(
-  new THREE.BoxGeometry(4.4, 0.2, 3.4),
-  new THREE.MeshLambertMaterial({ color: 0x3a3a5a })
-);
-roof.position.y = 3.1;
-serverGroup.add(roof);
-
-for (let i = 0; i < 4; i++) {
-  const sLed = new THREE.Mesh(
-    new THREE.BoxGeometry(0.3, 0.08, 0.01),
-    new THREE.MeshPhongMaterial({
-      color: i % 2 === 0 ? 0x00ff88 : 0x3388ff,
-      emissive: i % 2 === 0 ? 0x00ff88 : 0x3388ff,
-      emissiveIntensity: 0.8
-    })
-  );
-  sLed.position.set(-0.8 + i * 0.5, 1.5, 1.51);
-  serverGroup.add(sLed);
-}
-
-// AI SERVER label
-const aiCanvas = document.createElement('canvas');
-aiCanvas.width = 150; aiCanvas.height = 60;
-const aiCtx = aiCanvas.getContext('2d');
-aiCtx.fillStyle = '#3498db';
-aiCtx.fillRect(0, 0, 150, 60);
-aiCtx.fillStyle = '#fff';
-aiCtx.font = 'bold 30px monospace';
-aiCtx.textAlign = 'center';
-aiCtx.fillText('AI SERVER', 75, 40);
-const aiLabel = new THREE.Mesh(
-  new THREE.PlaneGeometry(1.5, 0.6),
-  new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(aiCanvas) })
-);
-aiLabel.position.set(0, 2.5, 1.52);
-serverGroup.add(aiLabel);
-
-const dish = new THREE.Mesh(
-  new THREE.SphereGeometry(0.6, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
-  new THREE.MeshPhongMaterial({ color: 0xdddddd, side: THREE.DoubleSide })
-);
-dish.position.set(1.2, 3.3, 0);
-dish.rotation.x = Math.PI * 0.7;
-serverGroup.add(dish);
-scene.add(serverGroup);
-
-// --- Farmer hut (Tanzanian boma style) ---
-const hutGroup = new THREE.Group();
-hutGroup.position.set(-18, 0, 12);
-
-// Mud-brick circular wall
-const wall = new THREE.Mesh(
-  new THREE.CylinderGeometry(2.5, 2.8, 2.5, 12),
-  new THREE.MeshLambertMaterial({ color: 0xa0704a })
-);
-wall.position.y = 1.25;
-wall.castShadow = true;
-hutGroup.add(wall);
-
-// Thatched makuti roof
-const thatch = new THREE.Mesh(
-  new THREE.ConeGeometry(3.4, 2.2, 12),
-  new THREE.MeshLambertMaterial({ color: 0x9a7a20 })
-);
-thatch.position.y = 3.6;
-thatch.castShadow = true;
-hutGroup.add(thatch);
-
-// Door opening
-const door = new THREE.Mesh(
-  new THREE.PlaneGeometry(0.8, 1.6),
-  new THREE.MeshLambertMaterial({ color: 0x3a2510 })
-);
-door.position.set(0, 0.8, 2.81);
-hutGroup.add(door);
-
-// Boma fence (thorn-branch fence around hut)
-const fenceMat = new THREE.MeshLambertMaterial({ color: 0x6b5030 });
-for (let a = 0; a < Math.PI * 2; a += 0.3) {
-  if (a > 1.3 && a < 1.85) continue; // gap for entrance
-  const fencePost = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.04, 0.05, 1.2, 4),
-    fenceMat
-  );
-  fencePost.position.set(Math.cos(a) * 4.5, 0.6, Math.sin(a) * 4.5);
-  fencePost.rotation.z = (Math.random() - 0.5) * 0.15;
-  hutGroup.add(fencePost);
-}
-scene.add(hutGroup);
-
-// --- Acacia trees (flat-topped, iconic Tanzania) ---
-function createAcacia(x, z, s) {
-  const trunkH = 3 * s;
-  // Trunk — slender, slightly curved
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.08 * s, 0.18 * s, trunkH, 6),
-    new THREE.MeshLambertMaterial({ color: 0x5a3a1a })
-  );
-  trunk.position.set(x, trunkH / 2, z);
-  trunk.castShadow = true;
-  scene.add(trunk);
-
-  // Flat canopy (wide, thin disc — the classic acacia silhouette)
-  const canopy = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.5 * s, 2.8 * s, 0.5 * s, 10),
-    new THREE.MeshLambertMaterial({ color: 0x4a7a28 + Math.floor(Math.random() * 0x101000) })
-  );
-  canopy.position.set(x, trunkH + 0.2 * s, z);
-  canopy.castShadow = true;
-  scene.add(canopy);
-
-  // Some branches reaching up into canopy
-  for (let b = 0; b < 3; b++) {
-    const bAngle = (b / 3) * Math.PI * 2 + Math.random() * 0.5;
-    const branch = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.02 * s, 0.04 * s, 1.5 * s, 4),
-      new THREE.MeshLambertMaterial({ color: 0x5a3a1a })
-    );
-    branch.position.set(
-      x + Math.cos(bAngle) * 0.5 * s,
-      trunkH * 0.7,
-      z + Math.sin(bAngle) * 0.5 * s
-    );
-    branch.rotation.z = Math.cos(bAngle) * 0.5;
-    branch.rotation.x = Math.sin(bAngle) * 0.5;
-    scene.add(branch);
-  }
-}
-
-// --- Baobab trees (fat trunk, sparse crown) ---
-function createBaobab(x, z, s) {
-  // Massive trunk
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.8 * s, 1.2 * s, 3.5 * s, 8),
-    new THREE.MeshLambertMaterial({ color: 0x8a7a6a })
-  );
-  trunk.position.set(x, 1.75 * s, z);
-  trunk.castShadow = true;
-  scene.add(trunk);
-
-  // Sparse gnarly branches at top
-  for (let b = 0; b < 6; b++) {
-    const bAngle = (b / 6) * Math.PI * 2;
-    const bLen = (1.0 + Math.random() * 1.0) * s;
-    const branch = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.06 * s, 0.15 * s, bLen, 5),
-      new THREE.MeshLambertMaterial({ color: 0x7a6a5a })
-    );
-    branch.position.set(
-      x + Math.cos(bAngle) * 0.6 * s,
-      3.5 * s + bLen * 0.2,
-      z + Math.sin(bAngle) * 0.6 * s
-    );
-    branch.rotation.z = Math.cos(bAngle) * 0.7;
-    branch.rotation.x = Math.sin(bAngle) * 0.7;
-    scene.add(branch);
-
-    // Small leaf clusters at branch tips
-    if (Math.random() > 0.3) {
-      const leafCluster = new THREE.Mesh(
-        new THREE.SphereGeometry(0.4 * s, 6, 4),
-        new THREE.MeshLambertMaterial({ color: 0x5a8a30 })
-      );
-      leafCluster.position.set(
-        x + Math.cos(bAngle) * (0.6 + bLen * 0.35) * s,
-        3.5 * s + bLen * 0.6,
-        z + Math.sin(bAngle) * (0.6 + bLen * 0.35) * s
-      );
-      scene.add(leafCluster);
-    }
-  }
-}
-
-// Place acacias (scattered across savanna)
-[[-25,-8,1.2],[-22,-5,1],[-28,2,1.3],[28,-10,1.3],[30,5,1],[25,12,1.1],
- [-12,-18,1.1],[15,-20,1.2],[-8,20,1],[10,22,1.1],[-30,-15,1.3],
- [32,-18,1.0],[-15,22,0.9],[35,20,1.2],[18,25,1.0],[-35,-10,1.1],
- [40,-15,0.9],[-25,18,1.0]
-].forEach(([x,z,s]) => createAcacia(x,z,s));
-
-// Place baobabs (fewer, they're rare and iconic)
-[[-20,8,1.4],[38,8,1.2],[-40,-20,1.5],[45,25,1.1]
-].forEach(([x,z,s]) => createBaobab(x,z,s));
-
-// --- African sun (big, hot, golden) ---
-const sun = new THREE.Mesh(
-  new THREE.SphereGeometry(4, 16, 16),
-  new THREE.MeshBasicMaterial({ color: 0xffdd33 })
-);
-sun.position.set(60, 45, -40);
-scene.add(sun);
-// Heat haze glow
-const glow = new THREE.Mesh(
-  new THREE.SphereGeometry(8, 16, 16),
-  new THREE.MeshBasicMaterial({ color: 0xffcc22, transparent: true, opacity: 0.12 })
-);
-glow.position.copy(sun.position);
-scene.add(glow);
-// Second glow ring (heat shimmer)
-const glow2 = new THREE.Mesh(
-  new THREE.SphereGeometry(14, 16, 16),
-  new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.04 })
-);
-glow2.position.copy(sun.position);
-scene.add(glow2);
-
-// --- Clouds (sparse, bright tropical cumulus) ---
-function createCloud(x,y,z) {
-  const g = new THREE.Group();
-  const mat = new THREE.MeshLambertMaterial({color: 0xfff8f0, transparent:true, opacity:0.8});
-  const count = 3 + Math.floor(Math.random()*3);
-  for (let i=0;i<count;i++) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(1.2+Math.random()*2,8,6), mat);
-    m.position.set(i*2-count, Math.random()*0.8, Math.random()*1.5-0.75);
-    g.add(m);
-  }
-  g.position.set(x,y,z);
-  scene.add(g);
-  return g;
-}
-const clouds = [createCloud(-20,28,-30), createCloud(25,32,-25), createCloud(50,26,15), createCloud(-40,30,20)];
-
-// --- Birds circling (simple dark triangles high up) ---
-const birds = [];
-for (let i = 0; i < 5; i++) {
-  const birdGeo = new THREE.BufferGeometry();
-  const verts = new Float32Array([0,0,0, -0.3,0,-0.15, 0.3,0,-0.15]);
-  birdGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
-  const bird = new THREE.Mesh(birdGeo, new THREE.MeshBasicMaterial({color:0x222222, side:THREE.DoubleSide}));
-  const angle = (i/5) * Math.PI * 2;
-  const radius = 15 + Math.random() * 10;
-  bird.position.set(Math.cos(angle)*radius, 18+Math.random()*8, Math.sin(angle)*radius);
-  scene.add(bird);
-  birds.push({ mesh: bird, angle, radius, speed: 0.003 + Math.random()*0.002, height: bird.position.y });
-}
-
-// ============================================================
-// SMS data flow particles
-// ============================================================
-const particles = [];
-const particleGeo = new THREE.SphereGeometry(0.15, 6, 6);
-const particleSendMat = new THREE.MeshBasicMaterial({ color: 0xf1c40f });
-const particleRecvMat = new THREE.MeshBasicMaterial({ color: 0x7cfc00 });
-
-const sendPath = [
-  new THREE.Vector3(-3, 2.85, -2),
-  new THREE.Vector3(8, 10, -8),
-  new THREE.Vector3(20, 15, -15),
-];
-const recvPath = [
-  new THREE.Vector3(20, 3, 18),
-  new THREE.Vector3(20, 15, -15),
-  new THREE.Vector3(0, 10, 0),
-  new THREE.Vector3(-18, 3, 12),
-];
-
-function createParticle(path, mat, speed) {
-  const mesh = new THREE.Mesh(particleGeo, mat);
-  mesh.visible = false;
-  scene.add(mesh);
-  return { mesh, path, t: 0, speed, active: false };
-}
-for (let i = 0; i < 5; i++) {
-  particles.push(createParticle(sendPath, particleSendMat, 0.008 + Math.random() * 0.004));
-  particles.push(createParticle(recvPath, particleRecvMat, 0.007 + Math.random() * 0.003));
-}
-
-function getPointOnPath(path, t) {
-  const segs = path.length - 1;
-  const seg = Math.min(Math.floor(t * segs), segs - 1);
-  return new THREE.Vector3().lerpVectors(path[seg], path[seg + 1], (t * segs) - seg);
-}
-
-// ============================================================
-// Orbit controls
-// ============================================================
-let isDragging = false;
-let prevMouse = { x: 0, y: 0 };
-let orbitAngle = 0.8;
-let orbitPitch = 0.45;
-let orbitDist = 22;
-
-container.addEventListener('mousedown', e => {
-  if (e.target.closest('#ai-panel') || e.target.closest('#nokia-container')) return;
-  isDragging = true; prevMouse = { x: e.clientX, y: e.clientY };
-});
-container.addEventListener('mousemove', e => {
-  if (!isDragging) return;
-  orbitAngle -= (e.clientX - prevMouse.x) * 0.005;
-  orbitPitch = Math.max(0.1, Math.min(1.2, orbitPitch - (e.clientY - prevMouse.y) * 0.005));
-  prevMouse = { x: e.clientX, y: e.clientY };
-});
-container.addEventListener('mouseup', () => isDragging = false);
-container.addEventListener('mouseleave', () => isDragging = false);
-container.addEventListener('wheel', e => {
-  if (e.target.closest('#ai-panel') || e.target.closest('#nokia-container')) return;
-  orbitDist = Math.max(8, Math.min(80, orbitDist + e.deltaY * 0.03));
-});
-
-// Touch
-container.addEventListener('touchstart', e => {
-  if (e.target.closest('#ai-panel') || e.target.closest('#nokia-container')) return;
-  isDragging = true;
-  prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-});
-container.addEventListener('touchmove', e => {
-  if (!isDragging) return;
-  orbitAngle -= (e.touches[0].clientX - prevMouse.x) * 0.005;
-  orbitPitch = Math.max(0.1, Math.min(1.2, orbitPitch - (e.touches[0].clientY - prevMouse.y) * 0.005));
-  prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-});
-container.addEventListener('touchend', () => isDragging = false);
-
-// ============================================================
-// Nokia SMS logic
-// ============================================================
-let nokiaOn = false;
-let smsIndex = 0;
-
-// Prebuilt messages (fallback / demo mode)
-const prebuiltSMS = [
-  `SoilSMS 17/03 08:42\nSTATUS: Soil dry\n(34%) pH 6.1\nNUTRIENTS: N low\n(85mg/kg) P+K ok\nACTION: Add urea.\nRain in 4 days.\nPLANT: Maize/beans\nafter rain.`,
-  `SoilSMS 17/03 14:20\nSTATUS: Moisture\nrising (41%) pH 6.3\nTemp 26C humid 78%\nNUTRIENTS: All ok\nACTION: No action\nneeded. Conditions\nimproving.\nNEXT: Check in 6h`,
-  `SoilSMS 17/03 20:05\nALERT: Soil temp\ndrop to 18C.\nMoisture 52% good.\npH stable 6.2\nACTION: Cover young\nseedlings tonight.\nFrost risk LOW but\nmonitor closely.`,
-  `SoilSMS 18/03 06:30\nSTATUS: Overnight\nrain detected.\nMoisture 68% GOOD\npH 6.0 Temp 22C\nACTION: Perfect\nplanting window!\nSow maize today.\nNext SMS in 12h.`,
-];
-
-// LLM-generated messages get pushed here
-let llmSMS = [];
-// Which list the Nokia cycles through
-let activeSMSList = prebuiltSMS;
-
-function toggleNokia() {
-  const screen = document.getElementById('nokia-screen');
-  const text = document.getElementById('nokia-text');
-  const hint = document.getElementById('nokia-hint');
-
-  if (!nokiaOn) {
-    nokiaOn = true;
-    screen.classList.add('lit');
-    text.textContent = activeSMSList[smsIndex];
-    hint.textContent = activeSMSList.length > 1 ? 'TAP FOR NEXT' : 'TAP TO CLOSE';
-    smsIndex = (smsIndex + 1) % activeSMSList.length;
-  } else {
-    text.textContent = activeSMSList[smsIndex];
-    smsIndex = (smsIndex + 1) % activeSMSList.length;
-    if (smsIndex === 0) {
-      nokiaOn = false;
-      screen.classList.remove('lit');
-      text.textContent = 'No new messages';
-      hint.textContent = 'TAP TO READ SMS';
-    }
-  }
-}
-
-// ============================================================
-// Sensor simulation
-// ============================================================
-const S = { moisture: 34.2, ph: 6.1, soilTemp: 24.5, airTemp: 28.0, humid: 72.0, n: 85, p: 30, k: 160 };
-
-function updateSensors() {
-  S.moisture = Math.max(15, Math.min(80, S.moisture + (Math.random() - 0.48) * 0.5));
-  S.ph = Math.max(4.5, Math.min(8.0, S.ph + (Math.random() - 0.5) * 0.02));
-  S.soilTemp += (Math.random() - 0.5) * 0.1;
-  S.airTemp += (Math.random() - 0.5) * 0.15;
-  S.humid = Math.max(30, Math.min(95, S.humid + (Math.random() - 0.5) * 0.3));
-  S.n = Math.max(20, Math.min(200, S.n + (Math.random() - 0.5)));
-  S.p = Math.max(10, Math.min(80, S.p + (Math.random() - 0.5) * 0.5));
-  S.k = Math.max(50, Math.min(300, S.k + (Math.random() - 0.5)));
-
-  document.getElementById('v-moisture').textContent = S.moisture.toFixed(1) + '%';
-  document.getElementById('v-ph').textContent = S.ph.toFixed(1);
-  document.getElementById('v-soiltemp').textContent = S.soilTemp.toFixed(1) + '\u00B0C';
-  document.getElementById('v-airtemp').textContent = S.airTemp.toFixed(1) + '\u00B0C';
-  document.getElementById('v-humid').textContent = S.humid.toFixed(1) + '%';
-  document.getElementById('v-n').textContent = Math.round(S.n) + ' mg/kg';
-  document.getElementById('v-p').textContent = Math.round(S.p) + ' mg/kg';
-  document.getElementById('v-k').textContent = Math.round(S.k) + ' mg/kg';
-
-  const now = new Date();
-  document.getElementById('v-time').textContent =
-    now.getHours().toString().padStart(2,'0') + ':' +
-    now.getMinutes().toString().padStart(2,'0') + ':' +
-    now.getSeconds().toString().padStart(2,'0');
-}
-
-// ============================================================
-// AI Mode switching & OpenRouter LLM integration
-// ============================================================
-let aiMode = 'demo'; // 'demo' or 'llm'
-
-function setAIMode(mode) {
-  aiMode = mode;
-  document.getElementById('btn-demo').classList.toggle('active', mode === 'demo');
-  document.getElementById('btn-llm').classList.toggle('active', mode === 'llm');
-  document.getElementById('llm-fields').classList.toggle('disabled', mode !== 'llm');
-}
-
-// System prompt taken from the real SoilSMS server
-const SYSTEM_PROMPT = `You are an agronomist assistant helping smallholder farmers in rural Tanzania.
-You receive soil sensor data and weather forecast data, then produce a practical SMS-friendly report.
-
-Output rules:
-- Write in plain English only (no markdown, no bullet symbols, no emojis)
-- Be concise — total output must fit in 3-4 SMS messages (max 600 characters total)
-- Structure: STATUS | NUTRIENTS | ACTION | PLANT | TIMING
-- Speak directly to the farmer ("Your soil...", "You should...")
-- Prioritize the most critical actions first
-- Consider local Tanzanian crops: maize, cassava, sorghum, beans, groundnuts, sunflower, rice, vegetables
-- If data values are null/missing, note that sensor reading failed and advise re-check
-- Always end with a short timing recommendation for planting or treatment
-
-NPK interpretation reference (mg/kg):
-  Nitrogen:    Low <100, Medium 100-200, High >200
-  Phosphorus:  Low <25, Medium 25-50, High >50
-  Potassium:   Low <100, Medium 100-200, High >200
-
-pH interpretation:
-  <5.5 = too acidic, 5.5-7.0 = good, 7.0-8.5 = alkaline, >8.5 = too alkaline
-
-Moisture interpretation:
-  <20% = very dry, 20-40% = dry, 40-70% = good, >70% = waterlogged`;
-
-async function runAnalysis() {
-  const btn = document.getElementById('ai-analyze-btn');
-  const status = document.getElementById('ai-status');
-
-  if (aiMode === 'demo') {
-    // Just cycle to a random prebuilt message and show it on Nokia
-    activeSMSList = prebuiltSMS;
-    smsIndex = Math.floor(Math.random() * prebuiltSMS.length);
-    nokiaOn = false;
-    toggleNokia();
-    status.style.color = '#7cfc00';
-    status.textContent = 'Demo SMS delivered to Nokia';
-    setTimeout(() => status.textContent = '', 3000);
-    return;
-  }
-
-  // LLM mode
-  const apiKey = document.getElementById('api-key').value.trim();
-  if (!apiKey) {
-    status.style.color = '#e74c3c';
-    status.textContent = 'Enter your OpenRouter API key';
-    return;
-  }
-
-  const model = document.getElementById('llm-model').value;
-  btn.disabled = true;
-  btn.textContent = 'ANALYZING...';
-  status.style.color = '#f1c40f';
-  status.textContent = 'Sending sensor data to ' + model.split('/')[1] + '...';
-
-  const userMessage = `SOIL SENSOR READING (node FARM001):
-Moisture: ${S.moisture.toFixed(1)}%
-pH: ${S.ph.toFixed(1)}
-Soil temperature: ${S.soilTemp.toFixed(1)} C
-Air temperature: ${S.airTemp.toFixed(1)} C
-Air humidity: ${S.humid.toFixed(1)}%
-Nitrogen: ${Math.round(S.n)} mg/kg
-Phosphorus: ${Math.round(S.p)} mg/kg
-Potassium: ${Math.round(S.k)} mg/kg
-
-WEATHER FORECAST (next 3 days):
-Day 1: 29C, 2mm rain
-Day 2: 27C, 8mm rain
-Day 3: 26C, 12mm rain
-
-Provide your SMS advisory now.`;
-
-  try {
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + apiKey,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': window.location.href,
-        'X-Title': 'SoilSMS Demo'
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userMessage }
-        ],
-        max_tokens: 300,
-        temperature: 0.7
-      })
-    });
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${resp.status}`);
-    }
-
-    const data = await resp.json();
-    const advice = data.choices?.[0]?.message?.content?.trim();
-
-    if (!advice) throw new Error('Empty response from model');
-
-    // Format for Nokia screen (wrap lines)
-    const now = new Date();
-    const dateStr = now.getDate().toString().padStart(2,'0') + '/' +
-                    (now.getMonth()+1).toString().padStart(2,'0') + ' ' +
-                    now.getHours().toString().padStart(2,'0') + ':' +
-                    now.getMinutes().toString().padStart(2,'0');
-
-    const formatted = `SoilSMS ${dateStr}\n${advice}`;
-
-    // Add to LLM list & show on Nokia
-    llmSMS.unshift(formatted);
-    if (llmSMS.length > 10) llmSMS.pop();
-    activeSMSList = llmSMS;
-    smsIndex = 0;
-    nokiaOn = false;
-    toggleNokia();
-
-    status.style.color = '#7cfc00';
-    status.textContent = 'AI advice delivered to Nokia';
-  } catch (e) {
-    status.style.color = '#e74c3c';
-    status.textContent = 'Error: ' + e.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'ANALYZE SENSORS';
-    setTimeout(() => { if (status.style.color === 'rgb(124, 252, 0)') status.textContent = ''; }, 4000);
-  }
-}
-
-// ============================================================
-// Signal rings
-// ============================================================
-const signalRings = [];
-function createSignalRing() {
-  const mat = new THREE.MeshBasicMaterial({ color: 0xf1c40f, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.24, 16), mat);
-  ring.position.set(rpiGroup.position.x + 0.15, 2.85, rpiGroup.position.z);
-  ring.lookAt(towerGroup.position.x, 15, towerGroup.position.z);
-  scene.add(ring);
-  signalRings.push({ mesh: ring, scale: 1, opacity: 0.8 });
-}
-
-// ============================================================
-// Animation
-// ============================================================
-let time = 0, particleTimer = 0, signalTimer = 0;
-
-function animate() {
-  requestAnimationFrame(animate);
-  time += 0.016;
-  particleTimer += 0.016;
-  signalTimer += 0.016;
-
-  if (!isDragging) orbitAngle += 0.0008;
-
-  camera.position.x = Math.sin(orbitAngle) * Math.cos(orbitPitch) * orbitDist;
-  camera.position.y = Math.sin(orbitPitch) * orbitDist;
-  camera.position.z = Math.cos(orbitAngle) * Math.cos(orbitPitch) * orbitDist;
-  camera.lookAt(0, 1.5, 0);
-
-  clouds.forEach((c, i) => {
-    c.position.x += 0.008 * (i % 2 === 0 ? 1 : -1);
-    if (c.position.x > 60) c.position.x = -60;
-    if (c.position.x < -60) c.position.x = 60;
-  });
-
-  led.material.emissiveIntensity = Math.sin(time * 4) > 0 ? 1 : 0.1;
-  led.material.color.setHex(Math.sin(time * 4) > 0 ? 0x00ff00 : 0x004400);
-  towerLight.material.emissiveIntensity = Math.sin(time * 2) > 0 ? 0.8 : 0.1;
-
-  if (signalTimer > 2.0) { signalTimer = 0; createSignalRing(); }
-  for (let i = signalRings.length - 1; i >= 0; i--) {
-    const r = signalRings[i];
-    r.scale += 0.08;
-    r.opacity -= 0.008;
-    r.mesh.scale.set(r.scale, r.scale, r.scale);
-    r.mesh.material.opacity = Math.max(0, r.opacity);
-    if (r.opacity <= 0) { scene.remove(r.mesh); signalRings.splice(i, 1); }
-  }
-
-  if (particleTimer > 1.5) {
-    particleTimer = 0;
-    const p = particles.find(p => !p.active);
-    if (p) { p.active = true; p.t = 0; p.mesh.visible = true; }
-  }
-  particles.forEach(p => {
-    if (!p.active) return;
-    p.t += p.speed;
-    if (p.t >= 1) { p.active = false; p.mesh.visible = false; p.t = 0; return; }
-    p.mesh.position.copy(getPointOnPath(p.path, p.t));
-    const s = 1 + Math.sin(p.t * 20) * 0.3;
-    p.mesh.scale.set(s, s, s);
-  });
-
-  if (Math.floor(time * 60) % 60 === 0) updateSensors();
-
-  // Gentle sway on the stake
-  rpiGroup.rotation.z = Math.sin(time * 0.8) * 0.01;
-
-  // Birds circling lazily
-  birds.forEach(b => {
-    b.angle += b.speed;
-    b.mesh.position.x = Math.cos(b.angle) * b.radius;
-    b.mesh.position.z = Math.sin(b.angle) * b.radius;
-    b.mesh.position.y = b.height + Math.sin(time * 0.5 + b.angle) * 1.5;
-    b.mesh.rotation.y = b.angle + Math.PI / 2;
-  });
-
-  renderer.render(scene, camera);
-}
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-document.getElementById('info-overlay').addEventListener('click', () => {
-  document.getElementById('info-overlay').classList.add('hidden');
-});
-
-// Persist API key in sessionStorage
-const savedKey = sessionStorage.getItem('soilsms_api_key');
-if (savedKey) document.getElementById('api-key').value = savedKey;
-document.getElementById('api-key').addEventListener('input', e => {
-  sessionStorage.setItem('soilsms_api_key', e.target.value);
-});
-
-updateSensors();
-animate();
-</script>
 </body>
 </html>

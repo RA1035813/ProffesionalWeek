@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoilSMS — Farm World Demo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Landing overlay -->
+<div id="info-overlay">
+  <div class="info-card">
+    <h1>SoilSMS</h1>
+    <p>
+      A solar-powered Raspberry Pi reads soil sensors on a Tanzanian farm.
+      Data flies over 2G SMS to a server that runs AI analysis, then sends
+      crop advice back &mdash; all on a basic Nokia phone. No internet needed.
+    </p>
+    <p style="font-size:13px; color:#666;">
+      Drag to orbit &bull; Scroll to zoom &bull; Click Nokia to read SMS
+    </p>
+    <div class="start-hint">[ CLICK TO ENTER ]</div>
+  </div>
+</div>
+
+<div id="canvas-container">
+  <!-- HUD -->
+  <div id="hud">
+    <h1>SoilSMS</h1>
+    <p>RPi Zero 2 W &rarr; SMS &rarr; AI Server &rarr; SMS &rarr; Farmer</p>
+  </div>
+
+  <!-- Sensor readout -->
+  <div id="sensor-panel">
+    <h3>&#9670; LIVE SENSORS</h3>
+    <div class="sensor-row"><span class="label">Moisture</span><span class="value" id="v-moisture">34.2%</span></div>
+    <div class="sensor-row"><span class="label">pH</span><span class="value" id="v-ph">6.1</span></div>
+    <div class="sensor-row"><span class="label">Soil Temp</span><span class="value" id="v-soiltemp">24.5&deg;C</span></div>
+    <div class="sensor-row"><span class="label">Air Temp</span><span class="value" id="v-airtemp">28.0&deg;C</span></div>
+    <div class="sensor-row"><span class="label">Humidity</span><span class="value" id="v-humid">72.0%</span></div>
+    <div class="sensor-row"><span class="label">Nitrogen</span><span class="value" id="v-n">85 mg/kg</span></div>
+    <div class="sensor-row"><span class="label">Phosphorus</span><span class="value" id="v-p">30 mg/kg</span></div>
+    <div class="sensor-row"><span class="label">Potassium</span><span class="value" id="v-k">160 mg/kg</span></div>
+    <div style="margin-top:10px; font-size:10px; color:#555;">Node: FARM001 &bull; <span id="v-time">--:--</span></div>
+  </div>
+
+  <!-- Nokia phone -->
+  <div id="nokia-container" onclick="toggleNokia()">
+    <div class="nokia-phone">
+      <div class="nokia-brand">NOKIA</div>
+      <div class="nokia-screen" id="nokia-screen">
+        <div class="sms-text" id="nokia-text">No new messages</div>
+      </div>
+      <div class="nokia-nav">
+        <div class="nokia-nav-btn"></div>
+        <div class="nokia-nav-center"></div>
+        <div class="nokia-nav-btn"></div>
+      </div>
+      <div class="nokia-keypad">
+        <div class="nokia-key">1</div><div class="nokia-key">2</div><div class="nokia-key">3</div>
+        <div class="nokia-key">4</div><div class="nokia-key">5</div><div class="nokia-key">6</div>
+        <div class="nokia-key">7</div><div class="nokia-key">8</div><div class="nokia-key">9</div>
+        <div class="nokia-key">*</div><div class="nokia-key">0</div><div class="nokia-key">#</div>
+      </div>
+      <div class="nokia-hint" id="nokia-hint">TAP TO READ SMS</div>
+    </div>
+  </div>
+
+  <!-- AI analysis panel -->
+  <div id="ai-panel">
+    <h3>&#9670; AI ANALYSIS</h3>
+    <div class="ai-mode-toggle">
+      <button class="ai-mode-btn active" onclick="setAIMode('demo')" id="btn-demo">DEMO</button>
+      <button class="ai-mode-btn" onclick="setAIMode('llm')" id="btn-llm">LLM</button>
+    </div>
+    <div class="llm-fields disabled" id="llm-fields">
+      <label>OpenRouter API Key</label>
+      <input type="password" id="api-key" placeholder="sk-or-..." autocomplete="off">
+      <label>Model</label>
+      <select id="llm-model">
+        <optgroup label="Free (no cost)">
+          <option value="openrouter/free">Free Models Router (auto)</option>
+          <option value="stepfun/step-3.5-flash:free">StepFun Step 3.5 Flash</option>
+          <option value="minimax/minimax-m2.5:free">MiniMax M2.5</option>
+          <option value="nvidia/nemotron-3-nano-30b-a3b:free">NVIDIA Nemotron 3 Nano 30B</option>
+          <option value="arcee-ai/trinity-large-preview:free">Arcee Trinity Large</option>
+          <option value="liquid/lfm-2.5-1.2b-instruct:free">LiquidAI LFM 2.5 1.2B</option>
+        </optgroup>
+        <optgroup label="Paid">
+          <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
+          <option value="meta-llama/llama-4-maverick">Llama 4 Maverick</option>
+          <option value="mistralai/mistral-small-3.1-24b-instruct">Mistral Small 3.1</option>
+          <option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
+          <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+          <option value="qwen/qwen3-8b">Qwen3 8B</option>
+        </optgroup>
+      </select>
+    </div>
+    <button id="ai-analyze-btn" onclick="runAnalysis()">ANALYZE SENSORS</button>
+    <div id="ai-status"></div>
+  </div>
+
+  <!-- Flow legend -->
+  <div id="flow-legend">
+    <div class="flow-step"><div class="flow-dot" style="background:#e74c3c;"></div> RPi</div>
+    <span class="flow-arrow">&#x2192;</span>
+    <div class="flow-step"><div class="flow-dot" style="background:#f1c40f;"></div> SMS</div>
+    <span class="flow-arrow">&#x2192;</span>
+    <div class="flow-step"><div class="flow-dot" style="background:#3498db;"></div> AI</div>
+    <span class="flow-arrow">&#x2192;</span>
+    <div class="flow-step"><div class="flow-dot" style="background:#7cfc00;"></div> Farmer</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="scene.js"></script>
+<script src="controls.js"></script>
+<script src="sms.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

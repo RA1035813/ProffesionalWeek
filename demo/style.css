@@ -1,0 +1,320 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0a0a;
+  color: #e0e0e0;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+#canvas-container {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  cursor: grab;
+}
+#canvas-container:active { cursor: grabbing; }
+canvas { display: block; }
+
+/* HUD */
+#hud {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  pointer-events: none;
+}
+#hud h1 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  color: #7cfc00;
+  text-shadow: 0 0 10px #7cfc0066;
+  margin-bottom: 6px;
+}
+#hud p {
+  font-size: 12px;
+  color: #aaa;
+  max-width: 340px;
+}
+
+/* Sensor panel */
+#sensor-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  background: rgba(0,0,0,0.75);
+  border: 1px solid #7cfc0044;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 220px;
+  backdrop-filter: blur(8px);
+}
+#sensor-panel h3 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #7cfc00;
+  margin-bottom: 10px;
+}
+.sensor-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.sensor-row .label { color: #888; }
+.sensor-row .value { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Nokia phone */
+#nokia-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 20;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+#nokia-container:hover { transform: scale(1.05); }
+
+.nokia-phone {
+  width: 180px;
+  background: #1a1a2e;
+  border-radius: 20px 20px 30px 30px;
+  border: 2px solid #333;
+  padding: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 #2a2a4e;
+}
+.nokia-brand {
+  text-align: center;
+  font-size: 9px;
+  color: #555;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.nokia-screen {
+  background: #3a5a2a;
+  border-radius: 4px;
+  padding: 8px;
+  min-height: 120px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  line-height: 1.6;
+  color: #1a2e1a;
+  border: 2px solid #2a2a2a;
+}
+.nokia-screen.lit {
+  background: #84c464;
+  color: #1a3a0a;
+  box-shadow: 0 0 20px #84c46444;
+}
+.nokia-screen .sms-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.nokia-keypad {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.nokia-key {
+  background: #2a2a4e;
+  border: 1px solid #3a3a5e;
+  border-radius: 4px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  color: #666;
+}
+.nokia-nav {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.nokia-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #2a2a4e;
+  border: 1px solid #3a3a5e;
+}
+.nokia-nav-center {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #3a3a6e;
+  border: 2px solid #4a4a7e;
+}
+.nokia-hint {
+  text-align: center;
+  font-size: 9px;
+  color: #7cfc00;
+  margin-top: 8px;
+  animation: blink 1.5s infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* AI settings panel */
+#ai-panel {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 20;
+  background: rgba(0,0,0,0.8);
+  border: 1px solid #3498db44;
+  border-radius: 12px;
+  padding: 16px;
+  width: 300px;
+  backdrop-filter: blur(8px);
+}
+#ai-panel h3 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #3498db;
+  margin-bottom: 10px;
+}
+#ai-panel label {
+  font-size: 11px;
+  color: #888;
+  display: block;
+  margin-bottom: 4px;
+}
+#ai-panel input, #ai-panel select {
+  width: 100%;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #fff;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 8px;
+  outline: none;
+}
+#ai-panel input:focus, #ai-panel select:focus {
+  border-color: #3498db;
+}
+#ai-panel input::placeholder { color: #555; }
+.ai-mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+.ai-mode-btn {
+  flex: 1;
+  padding: 6px 0;
+  text-align: center;
+  font-size: 10px;
+  font-family: 'Press Start 2P', monospace;
+  cursor: pointer;
+  background: #1a1a2e;
+  color: #666;
+  border: none;
+  transition: all 0.2s;
+}
+.ai-mode-btn.active {
+  background: #3498db;
+  color: #fff;
+}
+#ai-analyze-btn {
+  width: 100%;
+  padding: 8px;
+  background: #3498db;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#ai-analyze-btn:hover { background: #2980b9; }
+#ai-analyze-btn:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+#ai-status {
+  font-size: 10px;
+  color: #666;
+  margin-top: 6px;
+  min-height: 14px;
+}
+.llm-fields { transition: opacity 0.3s; }
+.llm-fields.disabled { opacity: 0.3; pointer-events: none; }
+
+/* Flow legend */
+#flow-legend {
+  position: absolute;
+  top: auto;
+  bottom: 240px;
+  left: 20px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 10px;
+  color: #888;
+}
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.flow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.flow-arrow { color: #555; font-size: 8px; }
+
+/* Info overlay */
+#info-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s;
+  cursor: pointer;
+}
+#info-overlay.hidden { opacity: 0; pointer-events: none; }
+.info-card {
+  text-align: center;
+  max-width: 500px;
+  padding: 40px;
+}
+.info-card h1 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 24px;
+  color: #7cfc00;
+  margin-bottom: 16px;
+  text-shadow: 0 0 20px #7cfc0066;
+}
+.info-card p {
+  color: #aaa;
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+.info-card .start-hint {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #7cfc00;
+  animation: blink 1.5s infinite;
+}
