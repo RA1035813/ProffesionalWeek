@@ -1,8 +1,9 @@
 # Project Context: SoilSMS
 
+[Terug/Back](README)
 ## Overview
 SoilSMS is an SMS-based soil monitoring and crop advisory system designed for rural Tanzania. It uses Raspberry Pi nodes to collect soil data and a central server to analyze it using Claude AI and Open-Meteo weather data, sending advice back to farmers via 2G SMS.
-
+![schema](schemaProffesionalWeek.drawio.png)
 ## Current Project Status: **Architecture & Code Ready**
 
 ### What has been done:
