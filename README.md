@@ -209,3 +209,4 @@ TIMING: Plant in 5-7 days after forecasted rain.
 | DHT22 fails repeatedly | Add 10k pull-up on DAT pin |
 | GSM modem won't send | Check SIM credit; verify baud rate |
 | Claude returns error | Check `ANTHROPIC_API_KEY` in `.env` |
+
