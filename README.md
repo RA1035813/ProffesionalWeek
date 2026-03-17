@@ -8,11 +8,13 @@ No internet required on the farm. Works on **2G GSM**.
 # System Overview
 
 ## LOGS
-![schema](LOGS/schemaSQL.jpg)
+![schema](LOGS/schemaSQL.jpg) 
+
+[drawSQL](https://drawsql.app/teams/school-470/diagrams/soilsms)
 
 | DUTCH               | ENGLISH             |
 | ------------------- | ------------------- |
-| [LOGS](LOGS/uitleg) | [LOGS](LOGS/README) |
+| [LOGS](LOGS/uitleg.md) | [LOGS](LOGS/README.md) |
 
 ## Two-Component System
 
