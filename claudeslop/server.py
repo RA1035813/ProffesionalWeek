@@ -50,7 +50,7 @@ app = Flask(__name__)
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
 LLM_API_KEY       = os.environ.get("LLM_API_KEY", "")
-LLM_BASE_URL      = os.environ.get("LLM_BASE_URL", "https://api.moonshot.ai/v1")
+LLM_BASE_URL      = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1")
 LLM_MODEL         = os.environ.get("LLM_MODEL", "moonshot-v1-8k")
 AT_API_KEY        = os.environ.get("AT_API_KEY", "")
 AT_USERNAME       = os.environ.get("AT_USERNAME", "")
