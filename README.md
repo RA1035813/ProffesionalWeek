@@ -3,8 +3,8 @@
 SMS-based soil monitoring and crop advisory system for rural Tanzania.  
 No internet required on the farm. Works on **2G GSM**.
 
----
-
+[Uitleg/explanation](context.md)
+![schema](schemaProffesionalWeek.drawio.png)
 # System Overview
 
 ## Two-Component System
