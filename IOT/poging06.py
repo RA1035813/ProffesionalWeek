@@ -37,7 +37,7 @@ def provision_database():
     try:
         requests.post(f"{BASE_URL}/farmers/", json={
             "id": FARMER_ID,
-            "phone_number": "+31600000000",
+            "phone_number": "+32493882886",
             "name": "OrangePi User"
         }, timeout=5)
     except:

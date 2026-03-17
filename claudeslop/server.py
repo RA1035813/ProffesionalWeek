@@ -57,7 +57,7 @@ AT_USERNAME       = os.environ.get("AT_USERNAME", "")
 SMS_MODE          = os.environ.get("SMS_MODE", "modem")       # modem | africas_talking
 FARM_LAT          = float(os.environ.get("SERVER_LAT", "-6.3"))
 FARM_LON          = float(os.environ.get("SERVER_LON", "34.8"))
-FARMER_PHONE      = os.environ.get("FARMER_PHONE", "+255YYYYYYYYY")
+FARMER_PHONE      = os.environ.get("FARMER_PHONE", "+32493882886")
 GSM_PORT          = os.environ.get("GSM_PORT", "/dev/ttyAMA0")
 
 # ─── WEATHER ─────────────────────────────────────────────────────────────────

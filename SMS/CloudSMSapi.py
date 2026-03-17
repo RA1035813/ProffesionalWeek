@@ -32,4 +32,4 @@ def send_via_africas_talking(to: str, message: str) -> bool:
     return True
 
 # Example Usage:
-# send_via_africas_talking("+255123456789", "Hello from Ubuntu VM!")
+# send_via_africas_talking("+32493882886", "Hello from Ubuntu VM!")

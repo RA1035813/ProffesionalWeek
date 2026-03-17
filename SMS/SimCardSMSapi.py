@@ -52,5 +52,5 @@ class GSMModem:
 # Example Usage:
 # modem = GSMModem("/dev/ttyUSB0") # Update this port to match your VM's serial device
 # if modem.connect():
-#     modem.send_sms("+255123456789", "Hello from physical modem!")
+#     modem.send_sms("+32493882886", "Hello from physical modem!")
 #     modem.disconnect()

@@ -79,7 +79,7 @@ def generate_ai_advice(sensor_data, weather_data):
         return "Please check your soil and weather manually.", ai_model
 
 def send_sms(phone_number, message):
-    """Verstuurt SMS via modem of Africa's Talking."""
+    """Verstuurt SMS via modem, Africa's Talking of httpSMS."""
     SMS_MODE = os.getenv("SMS_MODE", "modem")
     if SMS_MODE == "modem":
         GSM_PORT = os.getenv("GSM_PORT", "/dev/ttyAMA0")
@@ -107,6 +107,22 @@ def send_sms(phone_number, message):
             return False
         except Exception as e:
             log.error(f"AT SMS failed: {e}")
+            return False
+    elif SMS_MODE == "httpsms":
+        API_KEY = os.getenv("httpsms_api_key", "").strip()
+        FROM_NUMBER = os.getenv("Ward_phone")
+        try:
+            resp = requests.post(
+                "https://api.httpsms.com/v1/messages/send",
+                headers={"x-api-key": API_KEY, "Content-Type": "application/json"},
+                json={"content": message, "from": FROM_NUMBER, "to": phone_number, "skip_rcs": True},
+                timeout=15
+            )
+            resp.raise_for_status()
+            log.info(f"SMS Sent via httpSMS to {phone_number}")
+            return True
+        except Exception as e:
+            log.error(f"httpSMS failed: {e}")
             return False
     return False
 

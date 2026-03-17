@@ -66,7 +66,7 @@ def send_sms(to: str, body: str):
     requests.post(
         "https://api.httpsms.com/v1/messages/send",
         headers={"x-api-key": API_KEY, "Content-Type": "application/json"},
-        data=json.dumps({"content": body, "from": FROM_NUMBER, "to": to}),
+        data=json.dumps({"content": body, "from": FROM_NUMBER, "to": to, "skip_rcs": True}),
     )
 
 # ── Flask app ─────────────────────────────────────────────────────────────────
