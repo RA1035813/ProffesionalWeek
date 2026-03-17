@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: soilsms_db
+    environment:
+      POSTGRES_USER: mijn_gebruiker
+      POSTGRES_PASSWORD: mijn_wachtwoord
+      POSTGRES_DB: soilsms_db
+    ports:
+      - "5433:5432"
+    volumes:
+      # Link naar het SQL bestand in de LOGS map voor initialisatie
+      - ./LOGS/start.sql:/docker-entrypoint-initdb.d/start.sql
+    restart: always
+
+  analysis-server:
+    build: .
+    container_name: soilsms_analysis_server
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - POSTGRES_DB=soilsms_db
+      - POSTGRES_USER=mijn_gebruiker
+      - POSTGRES_PASSWORD=mijn_wachtwoord
+      - USE_LOCAL_AI=true  # Verander naar false als je OpenRouter gebruikt
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    depends_on:
+      - db
+    restart: on-failure
+
+networks:
+  default:
+    name: soilsms_network
