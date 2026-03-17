@@ -177,93 +177,55 @@
     font-weight: 400;
   }
 
-  /* Contact form */
-  .contact-form {
+  /* CTA box */
+  .cta-box {
     background: rgba(255,255,255,0.03);
     border: 1px solid #222;
     border-radius: 12px;
-    padding: 32px;
+    padding: 48px 32px;
+    text-align: center;
   }
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-  .form-group {
-    display: flex;
-    flex-direction: column;
-  }
-  .form-group.full {
-    grid-column: 1 / -1;
-  }
-  .form-group label {
-    font-size: 11px;
+  .cta-box p {
+    font-size: 15px;
     color: #888;
-    margin-bottom: 6px;
-    font-weight: 500;
+    line-height: 1.7;
+    max-width: 500px;
+    margin: 0 auto 28px;
   }
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
+  .cta-box .cta-hint {
+    font-size: 13px;
+    color: #999;
+    margin: 0 auto 8px;
+    max-width: 440px;
+  }
+  .cta-box .cta-prefill {
+    display: inline-block;
     background: #111;
     border: 1px solid #333;
     border-radius: 8px;
-    padding: 10px 12px;
-    color: #fff;
-    font-size: 14px;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    transition: border-color 0.2s;
+    padding: 10px 16px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #7cfc00;
+    margin-bottom: 28px;
+    user-select: all;
   }
-  .form-group input:focus,
-  .form-group select:focus,
-  .form-group textarea:focus {
-    border-color: #7cfc00;
-  }
-  .form-group input::placeholder,
-  .form-group textarea::placeholder {
-    color: #444;
-  }
-  .form-group textarea {
-    resize: vertical;
-    min-height: 100px;
-  }
-  .form-group select {
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-  }
-  .form-group select option {
-    background: #111;
-    color: #fff;
-  }
-  .form-submit {
+  .cta-btn {
     display: inline-block;
-    padding: 14px 40px;
+    padding: 18px 48px;
     background: #7cfc00;
     color: #0a0a0a;
     font-family: 'Press Start 2P', monospace;
-    font-size: 11px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 0 20px rgba(124,252,0,0.15);
-    margin-top: 8px;
-  }
-  .form-submit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0 40px rgba(124,252,0,0.3);
-    background: #90ff20;
-  }
-  .form-note {
-    margin-top: 16px;
     font-size: 12px;
-    color: #555;
-    text-align: center;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s;
+    box-shadow: 0 0 30px rgba(124,252,0,0.2);
+  }
+  .cta-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 50px rgba(124,252,0,0.4);
+    background: #90ff20;
   }
   .cta-btn-secondary {
     display: inline-block;
@@ -282,8 +244,10 @@
     background: rgba(124,252,0,0.1);
     border-color: #7cfc00;
   }
-  @media (max-width: 500px) {
-    .form-row { grid-template-columns: 1fr; }
+  .cta-note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #555;
   }
 
   /* Footer */
@@ -360,88 +324,16 @@
 <!-- ====== REQUEST A QUOTE ====== -->
 <section>
   <h2>Request a Quote</h2>
-  <form class="contact-form" id="quote-form">
-    <div class="form-row">
-      <div class="form-group">
-        <label for="name">Full Name</label>
-        <input type="text" id="name" placeholder="e.g. John Mwamba" required>
-      </div>
-      <div class="form-group">
-        <label for="email">Email Address</label>
-        <input type="email" id="email" placeholder="john@example.com" required>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label for="org">Organisation / Farm Name</label>
-        <input type="text" id="org" placeholder="e.g. Kilimanjaro Agri Co-op">
-      </div>
-      <div class="form-group">
-        <label for="phone">Phone Number</label>
-        <input type="tel" id="phone" placeholder="+255 7XX XXX XXX">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label for="plan">Interested In</label>
-        <select id="plan">
-          <option value="Single Node — $29 + $3/mo">Single Node — $29 + $3/mo</option>
-          <option value="Farm Bundle — $69 + $7/mo" selected>Farm Bundle — $69 + $7/mo</option>
-          <option value="Co-op / NGO — Custom">Co-op / NGO — Custom</option>
-          <option value="Not sure yet">Not sure yet — advise me</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="nodes">Estimated Number of Nodes</label>
-        <input type="number" id="nodes" placeholder="e.g. 5" min="1">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group full">
-        <label for="message">Tell Us About Your Farm / Needs</label>
-        <textarea id="message" placeholder="Describe your farm size, crops, location, and any specific requirements..."></textarea>
-      </div>
-    </div>
-    <button type="submit" class="form-submit">SUBMIT TO HELPDESK</button>
-    <p class="form-note">You'll be redirected to our Odoo helpdesk with your details pre-filled.</p>
-  </form>
-  <div style="text-align:center;">
+  <div class="cta-box">
+    <p>Open a ticket on our helpdesk to request a pricing quote. Please start your ticket subject with:</p>
+    <div class="cta-prefill">[QUOTE] Your name — Plan you're interested in</div>
+    <p class="cta-hint">This helps us tell quote requests apart from support tickets and prioritise them accordingly.</p>
+    <a href="https://mysticfoxxo.odoo.com/helpdesk" target="_blank" class="cta-btn">REQUEST A QUOTE</a>
+    <br>
     <a href="support.html" class="cta-btn-secondary">NEED SUPPORT INSTEAD?</a>
+    <p class="cta-note">Opens our helpdesk portal on mysticfoxxo.odoo.com</p>
   </div>
 </section>
-
-<script>
-  document.getElementById('quote-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    var name = document.getElementById('name').value;
-    var email = document.getElementById('email').value;
-    var org = document.getElementById('org').value;
-    var phone = document.getElementById('phone').value;
-    var plan = document.getElementById('plan').value;
-    var nodes = document.getElementById('nodes').value;
-    var message = document.getElementById('message').value;
-
-    // Build the description that will pre-fill the ticket body
-    var description = 'Quote Request from ' + name + '\n\n';
-    description += 'Email: ' + email + '\n';
-    if (org) description += 'Organisation: ' + org + '\n';
-    if (phone) description += 'Phone: ' + phone + '\n';
-    description += 'Plan: ' + plan + '\n';
-    if (nodes) description += 'Nodes: ' + nodes + '\n';
-    if (message) description += '\nMessage:\n' + message;
-
-    // Build the subject line
-    var subject = 'Quote Request — ' + plan + (org ? ' — ' + org : ' — ' + name);
-
-    // Redirect to Odoo helpdesk with URL params
-    var params = new URLSearchParams();
-    params.set('prefill_name', subject);
-    params.set('prefill_email', email);
-    params.set('prefill_description', description);
-
-    window.open('https://mysticfoxxo.odoo.com/helpdesk?' + params.toString(), '_blank');
-  });
-</script>
 
 <footer>
   <p>SoilSMS &mdash; Built for rural Tanzania, powered by open hardware and AI.</p>
