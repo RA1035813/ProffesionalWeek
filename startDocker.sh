@@ -7,4 +7,4 @@ echo "--- Starten van SoilSMS Containers (API versie: $DOCKER_API_VERSION) ---"
 
 # Start docker compose met alle meegegeven argumenten (standaard --build)
 # Gebruik ./startDocker.sh -d om op de achtergrond te draaien
-docker compose up --build "$@"
+docker-compose up --build "$@"
