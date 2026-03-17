@@ -22,7 +22,7 @@ function animate() {
   particleTimer += 0.016;
   signalTimer += 0.016;
 
-  if (!isDragging) orbitAngle += 0.0008;
+  if (!isDragging) orbitAngle += 0.0004;
 
   camera.position.x = Math.sin(orbitAngle) * Math.cos(orbitPitch) * orbitDist;
   camera.position.y = Math.sin(orbitPitch) * orbitDist;
