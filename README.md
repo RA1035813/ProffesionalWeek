@@ -40,6 +40,12 @@ Then:
 5. Converts the result into **plain readable advice**
 6. Sends SMS reply back to the farmer
 
+### FastAPI Logging API (new)
+
+1. Receives and stores **sensor data**, **weather logs**, and **AI advisories**
+2. Provides a **RESTful interface** for data retrieval and historical analysis
+3. Uses **SQLAlchemy** for database interactions with PostgreSQL
+
 Supports two modes:
 - **Local GSM modem** (polling mode)
 - **Africa’s Talking API** (webhook mode)

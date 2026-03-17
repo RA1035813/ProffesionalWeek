@@ -29,6 +29,20 @@ services:
       - db
     restart: on-failure
 
+  fastapi-server:
+    build: FastAPI/
+    container_name: soilsms_fastapi_server
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - POSTGRES_DB=soilsms_db
+      - POSTGRES_USER=mijn_gebruiker
+      - POSTGRES_PASSWORD=mijn_wachtwoord
+    depends_on:
+      - db
+    restart: on-failure
+
 networks:
   default:
     name: soilsms_network
