@@ -36,19 +36,39 @@ services:
     container_name: soilsms_fastapi_server
     ports:
       - "8000:8000"
-    environment:
-      - DB_HOST=db
-      - POSTGRES_DB=soilsms_db
-      - POSTGRES_USER=mijn_gebruiker
-      - POSTGRES_PASSWORD=mijn_wachtwoord
-      - USE_LOCAL_AI=true
-      - SMS_MODE=httpsms
-      - httpsms_api_key=${httpsms_api_key}
-      - Ward_phone=${Ward_phone}
+    env_file:
+      - .env
     volumes:
       - .:/app
     depends_on:
       - db
+    restart: on-failure
+
+  sms-receiver:
+    build:
+      context: .
+      dockerfile: sms_send/Dockerfile
+    container_name: soilsms_sms_receiver
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    restart: on-failure
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: soilsms_ngrok
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command:
+      - "http"
+      - "sms-receiver:8080"
+    depends_on:
+      - sms-receiver
     restart: on-failure
 
 networks:

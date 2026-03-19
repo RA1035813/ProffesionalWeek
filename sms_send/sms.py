@@ -156,5 +156,20 @@ def incoming_sms():
 
     return jsonify({"status": "ok"}), 200
 
+@app.route("/send_sms", methods=["POST"])
+def api_send_sms():
+    payload = request.get_json(force=True, silent=True)
+    if not payload:
+        return jsonify({"status": "no payload"}), 400
+    
+    to = payload.get("to")
+    message = payload.get("message")
+    
+    if not to or not message:
+        return jsonify({"status": "missing to or message"}), 400
+        
+    success = send_sms(to, message)
+    return jsonify({"status": "success" if success else "failed"}), 200 if success else 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
