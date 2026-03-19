@@ -3,14 +3,19 @@ import json
 import random
 import requests
 import logging
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- CONFIGURATION ---
-SIMULATE = True          # Set to False when running on actual RPi
-USE_HTTP = True          # Use HTTP POST for local testing instead of SMS
-SERVER_URL = "http://127.0.0.1:5000/api/data"
-FARMER_PHONE = "+32493882886"
-NODE_ID = "DEMO_NODE_001"
-READ_INTERVAL = 60       # Seconds between readings for prototype
+SIMULATE = os.environ.get("SIMULATE", "True").lower() == "true"
+USE_HTTP = os.environ.get("USE_HTTP", "True").lower() == "true"
+SERVER_URL = os.environ.get("SERVER_URL", "http://127.0.0.1:5000/api/data")
+SERVER_API_KEY = os.environ.get("SERVER_API_KEY", "")
+FARMER_PHONE = os.environ.get("FARMER_PHONE", "+32493882886")
+NODE_ID = os.environ.get("NODE_ID", "DEMO_NODE_001")
+READ_INTERVAL = int(os.environ.get("READ_INTERVAL", "60"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("soilsms.node")
@@ -45,9 +50,13 @@ def send_data_http(data):
         "location": {"lat": -6.7924, "lon": 39.2083},
         "sensors": data
     }
+    headers = {}
+    if SERVER_API_KEY:
+        headers["X-API-Key"] = SERVER_API_KEY
+
     try:
         log.info(f"Sending HTTP POST to {SERVER_URL}...")
-        resp = requests.post(SERVER_URL, json=payload, timeout=10)
+        resp = requests.post(SERVER_URL, json=payload, headers=headers, timeout=10)
         return resp.status_code == 200
     except Exception as e:
         log.error(f"HTTP Delivery failed: {e}")

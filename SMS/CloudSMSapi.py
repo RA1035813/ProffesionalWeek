@@ -1,8 +1,9 @@
 import requests
+import os
 
 def send_via_africas_talking(to: str, message: str) -> bool:
-    AT_API_KEY = "your_api_key_here"
-    AT_USERNAME = "your_username_here"
+    AT_API_KEY = os.environ.get("AT_API_KEY", "your_api_key_here")
+    AT_USERNAME = os.environ.get("AT_USERNAME", "your_username_here")
     
     # Chunk the message if it exceeds standard SMS length
     chunks = [message[i:i+155] for i in range(0, len(message), 155)]

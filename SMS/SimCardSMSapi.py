@@ -1,5 +1,11 @@
 import serial
 import time
+import re
+
+def validate_phone(number):
+    """Validate phone number format to prevent AT command injection."""
+    if not number: return False
+    return bool(re.match(r"^\+?[0-9]{7,15}$", str(number)))
 
 class GSMModem:
     def __init__(self, port: str, baud: int = 9600):
@@ -26,19 +32,32 @@ class GSMModem:
             return False
 
     def send_sms(self, number: str, message: str) -> bool:
+        if not validate_phone(number):
+            print(f"Invalid phone number rejected: {number}")
+            return False
+
         chunks = [message[i:i+155] for i in range(0, len(message), 155)]
         for chunk in chunks:
             try:
                 # Specify phone number
-                self.ser.write(f'AT+CMGS="{number}"\r\n'.encode())
+                cmd = f'AT+CMGS="{number}"\r\n'
+                self.ser.write(cmd.encode())
                 time.sleep(0.5)
                 # Send text chunk followed by CTRL+Z (chr(26))
                 self.ser.write((chunk + chr(26)).encode())
-                time.sleep(3)
                 
-                resp = self.ser.read_all().decode(errors="replace")
+                # Wait for response with timeout
+                start_time = time.time()
+                resp = ""
+                while (time.time() - start_time) < 10:
+                    if self.ser.in_waiting:
+                        resp += self.ser.read_all().decode(errors="replace")
+                        if "OK" in resp or "+CMGS:" in resp or "ERROR" in resp:
+                            break
+                    time.sleep(0.1)
+                
                 if "+CMGS:" not in resp:
-                    print(f"SMS chunk failed: {resp!r}")
+                    print(f"SMS chunk failed: {resp.strip()!r}")
                     return False
             except Exception as e:
                 print(f"send_sms error: {e}")

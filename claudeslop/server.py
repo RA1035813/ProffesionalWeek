@@ -32,14 +32,19 @@ import time
 import logging
 import requests
 import serial
-from flask import Flask, request, jsonify
+import re
+from functools import wraps
+from flask import Flask, request, jsonify, abort
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
+# --- CONFIG ---
+LOG_FILE = os.environ.get("LOG_FILE", "soilsms_server.log")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.FileHandler("/var/log/soilsms_server.log"),
+        RotatingFileHandler(LOG_FILE, maxBytes=10*1024*1024, backupCount=5),
         logging.StreamHandler()
     ]
 )
@@ -54,11 +59,35 @@ LLM_BASE_URL      = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1
 LLM_MODEL         = os.environ.get("LLM_MODEL", "moonshot-v1-8k")
 AT_API_KEY        = os.environ.get("AT_API_KEY", "")
 AT_USERNAME       = os.environ.get("AT_USERNAME", "")
+SERVER_API_KEY    = os.environ.get("SERVER_API_KEY")
 SMS_MODE          = os.environ.get("SMS_MODE", "modem")       # modem | africas_talking
 FARM_LAT          = float(os.environ.get("SERVER_LAT", "-6.3"))
 FARM_LON          = float(os.environ.get("SERVER_LON", "34.8"))
 FARMER_PHONE      = os.environ.get("FARMER_PHONE", "+32493882886")
 GSM_PORT          = os.environ.get("GSM_PORT", "/dev/ttyAMA0")
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not SERVER_API_KEY:
+            log.warning("SERVER_API_KEY not set! Authentication check skipped.")
+            return f(*args, **kwargs)
+        
+        provided_key = request.headers.get("X-API-Key") or request.args.get("api_key")
+        if provided_key != SERVER_API_KEY:
+            log.warning(f"Unauthorized access attempt from {request.remote_addr}")
+            abort(401)
+        return f(*args, **kwargs)
+    return decorated_function
+
+def validate_phone(number):
+    """Validate phone number format to prevent AT command injection."""
+    if not number: return False
+    return bool(re.match(r"^\+?[0-9]{7,15}$", str(number)))
+
+def mask_phone(phone):
+    if not phone: return "unknown"
+    return f"{phone[:4]}***{phone[-3:]}" if len(phone) > 7 else phone
 
 # ─── WEATHER ─────────────────────────────────────────────────────────────────
 
@@ -144,33 +173,40 @@ Moisture interpretation:
 
 def analyze_with_llm(sensor_data: dict, weather: dict) -> str:
     """Send data to a low-cost OpenAI-compatible LLM API (default: Kimi)."""
+    
+    # Sanitize sensor data
+    sanitized_sensors = {}
+    for k, v in sensor_data.items():
+        try:
+            # Ensure it's numeric to prevent prompt injection
+            if v is not None:
+                sanitized_sensors[k] = float(v)
+            else:
+                sanitized_sensors[k] = "N/A"
+        except (ValueError, TypeError):
+            sanitized_sensors[k] = "N/A"
 
-    user_message = f"""SOIL SENSOR READING (node {sensor_data.get('node_id', 'unknown')}):
-Moisture: {sensor_data.get('moisture_pct')}%
-pH: {sensor_data.get('ph')}
-Soil temperature: {sensor_data.get('soil_temp_c')} C
-Air temperature: {sensor_data.get('air_temp_c')} C
-Air humidity: {sensor_data.get('air_humid_pct')}%
-Nitrogen: {sensor_data.get('nitrogen_mg_kg')} mg/kg
-Phosphorus: {sensor_data.get('phosphorus_mg_kg')} mg/kg
-Potassium: {sensor_data.get('potassium_mg_kg')} mg/kg
+    user_message = f"""SOIL SENSOR READING:
+Moisture: {sanitized_sensors.get('moisture_pct')}%
+pH: {sanitized_sensors.get('ph')}
+Soil temperature: {sanitized_sensors.get('soil_temp_c')} C
+Air temperature: {sanitized_sensors.get('air_temp_c')} C
+Air humidity: {sanitized_sensors.get('air_humid_pct')}%
+Nitrogen: {sanitized_sensors.get('nitrogen_mg_kg')} mg/kg
+Phosphorus: {sanitized_sensors.get('phosphorus_mg_kg')} mg/kg
+Potassium: {sanitized_sensors.get('potassium_mg_kg')} mg/kg
 
 7-DAY WEATHER FORECAST SUMMARY:
-Total expected rain: {weather.get('summary', {}).get('total_rain_mm_7d')} mm
-Average temperature: {weather.get('summary', {}).get('avg_temp_c_7d')} C
-Total evapotranspiration: {weather.get('summary', {}).get('total_et0_mm_7d')} mm
-Water balance (rain minus evaporation): {weather.get('summary', {}).get('water_balance_mm_7d')} mm
+Total expected rain: {weather.get('summary', {}).get('total_rain_mm_7d', 'N/A')} mm
+Average temperature: {weather.get('summary', {}).get('avg_temp_c_7d', 'N/A')} C
+Total evapotranspiration: {weather.get('summary', {}).get('total_et0_mm_7d', 'N/A')} mm
+Water balance: {weather.get('summary', {}).get('water_balance_mm_7d', 'N/A')} mm
 
 Provide your agronomic assessment and recommendations."""
 
     if not LLM_API_KEY:
-        log.error("LLM_API_KEY missing. Set it to your provider key (e.g., Kimi/Moonshot).")
-        return (
-            "Analysis unavailable because LLM API key is missing. "
-            f"Raw data: pH={sensor_data.get('ph')}, moisture={sensor_data.get('moisture_pct')}%, "
-            f"N={sensor_data.get('nitrogen_mg_kg')} P={sensor_data.get('phosphorus_mg_kg')} "
-            f"K={sensor_data.get('potassium_mg_kg')}"
-        )
+        log.error("LLM_API_KEY missing.")
+        return "Analysis unavailable. Please contact support."
 
     try:
         base_url = LLM_BASE_URL.rstrip("/")
@@ -195,11 +231,11 @@ Provide your agronomic assessment and recommendations."""
         data = response.json()
         content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
         if not content:
-            raise ValueError(f"Unexpected LLM response payload: {data}")
+            raise ValueError("Empty LLM response")
         return content.strip()
     except Exception as e:
         log.error(f"LLM API error: {e}")
-        return f"Analysis failed: {e}. Raw data sent: pH={sensor_data.get('ph')}, moisture={sensor_data.get('moisture_pct')}%, N={sensor_data.get('nitrogen_mg_kg')} P={sensor_data.get('phosphorus_mg_kg')} K={sensor_data.get('potassium_mg_kg')}"
+        return "Agronomic analysis failed. Using fallback: Monitor soil moisture closely and check weather forecasts."
 
 # ─── SMS SENDING ─────────────────────────────────────────────────────────────
 
@@ -223,16 +259,31 @@ class GSMModem:
             return False
 
     def send_sms(self, number: str, message: str) -> bool:
+        if not validate_phone(number):
+            log.error(f"Invalid phone number rejected: {number}")
+            return False
+            
         chunks = [message[i:i+155] for i in range(0, len(message), 155)]
         for chunk in chunks:
             try:
-                self.ser.write(f'AT+CMGS="{number}"\r\n'.encode())
+                # Use strict number formatting to prevent injection
+                cmd = f'AT+CMGS="{number}"\r\n'
+                self.ser.write(cmd.encode())
                 time.sleep(0.5)
                 self.ser.write((chunk + chr(26)).encode())
-                time.sleep(3)
-                resp = self.ser.read_all().decode(errors="replace")
+                
+                # Wait for response with timeout
+                start_time = time.time()
+                resp = ""
+                while (time.time() - start_time) < 10:
+                    if self.ser.in_waiting:
+                        resp += self.ser.read_all().decode(errors="replace")
+                        if "OK" in resp or "+CMGS:" in resp or "ERROR" in resp:
+                            break
+                    time.sleep(0.1)
+                
                 if "+CMGS:" not in resp:
-                    log.error(f"SMS chunk failed: {resp!r}")
+                    log.error(f"SMS chunk failed: {resp.strip()!r}")
                     return False
             except Exception as e:
                 log.error(f"send_sms error: {e}")
@@ -245,6 +296,10 @@ class GSMModem:
 
 def send_via_africas_talking(to: str, message: str) -> bool:
     """Send SMS via Africa's Talking API (alternative to local modem)."""
+    if not validate_phone(to):
+        log.error(f"Invalid phone number rejected: {to}")
+        return False
+
     chunks = [message[i:i+155] for i in range(0, len(message), 155)]
     for chunk in chunks:
         try:
@@ -291,14 +346,15 @@ def process_sensor_sms(raw_message: str, sender_phone: str):
     3. Analyse with low-cost LLM API
     4. Reply to farmer
     """
-    log.info(f"Processing SMS from {sender_phone}: {raw_message[:80]}...")
+    masked_sender = mask_phone(sender_phone)
+    log.info(f"Processing SMS from {masked_sender}")
 
     # 1. Parse sensor JSON
     try:
         sensor_data = json.loads(raw_message)
     except json.JSONDecodeError as e:
-        log.error(f"Invalid JSON in SMS: {e}")
-        send_reply_sms(FARMER_PHONE, f"ERROR: Could not read sensor data. Please check node {sender_phone}.")
+        log.error(f"Invalid JSON in SMS from {masked_sender}")
+        send_reply_sms(FARMER_PHONE, "ERROR: Could not read sensor data.")
         return
 
     # 2. Fetch weather
@@ -316,17 +372,19 @@ def process_sensor_sms(raw_message: str, sender_phone: str):
     timestamp = datetime.utcnow().strftime("%d/%m %H:%M")
     full_reply = f"SoilSMS {timestamp} UTC\n{analysis}"
 
-    log.info(f"Sending reply to {FARMER_PHONE} ({len(full_reply)} chars)")
+    masked_target = mask_phone(FARMER_PHONE)
+    log.info(f"Sending reply to {masked_target} ({len(full_reply)} chars)")
     success = send_reply_sms(FARMER_PHONE, full_reply)
 
     if success:
         log.info("Reply sent successfully")
     else:
-        log.error("Failed to send reply to farmer")
+        log.error(f"Failed to send reply to {masked_target}")
 
 # ─── FLASK WEBHOOK (for Africa's Talking incoming SMS) ───────────────────────
 
 @app.route("/sms/incoming", methods=["POST"])
+@require_api_key
 def incoming_sms_webhook():
     """
     Africa's Talking incoming SMS webhook.
@@ -336,10 +394,16 @@ def incoming_sms_webhook():
     message = request.form.get("text", "")
 
     if not message:
-        return jsonify({"status": "error", "detail": "empty message"}), 400
+        return jsonify({"status": "error", "message": "empty message"}), 400
 
     process_sensor_sms(message, sender)
     return jsonify({"status": "ok"}), 200
+
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response
 
 @app.route("/health", methods=["GET"])
 def health():

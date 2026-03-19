@@ -1,8 +1,8 @@
-DROP TABLE IF EXISTS advisories;
-DROP TABLE IF EXISTS weather_logs;
-DROP TABLE IF EXISTS sensor_readings;
-DROP TABLE IF EXISTS farm_nodes;
-DROP TABLE IF EXISTS farmers;
+-- DROP TABLE IF EXISTS advisories;
+-- DROP TABLE IF EXISTS weather_logs;
+-- DROP TABLE IF EXISTS sensor_readings;
+-- DROP TABLE IF EXISTS farm_nodes;
+-- DROP TABLE IF EXISTS farmers;
 
 CREATE TABLE farmers(
     id INTEGER PRIMARY KEY NOT NULL,

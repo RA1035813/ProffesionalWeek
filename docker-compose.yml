@@ -3,11 +3,11 @@ services:
     image: postgres:latest
     container_name: soilsms_db
     environment:
-      POSTGRES_USER: mijn_gebruiker
-      POSTGRES_PASSWORD: mijn_wachtwoord
-      POSTGRES_DB: soilsms_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       # Link naar het SQL bestand in de LOGS map voor initialisatie
       - ./LOGS/start.sql:/docker-entrypoint-initdb.d/start.sql
@@ -20,9 +20,10 @@ services:
       - "5000:5000"
     environment:
       - DB_HOST=db
-      - POSTGRES_DB=soilsms_db
-      - POSTGRES_USER=mijn_gebruiker
-      - POSTGRES_PASSWORD=mijn_wachtwoord
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - SERVER_API_KEY=${SERVER_API_KEY}
       - USE_LOCAL_AI=true  # Verander naar false als je OpenRouter gebruikt
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     depends_on:
@@ -38,9 +39,10 @@ services:
       - "8000:8000"
     environment:
       - DB_HOST=db
-      - POSTGRES_DB=soilsms_db
-      - POSTGRES_USER=mijn_gebruiker
-      - POSTGRES_PASSWORD=mijn_wachtwoord
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - SERVER_API_KEY=${SERVER_API_KEY}
       - USE_LOCAL_AI=true
       - SMS_MODE=httpsms
       - httpsms_api_key=${httpsms_api_key}
