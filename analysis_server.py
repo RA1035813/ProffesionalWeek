@@ -28,10 +28,10 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 SYSTEM_PROMPT = """You are an expert tropical agronomist helping smallholder farmers in Tanzania.
 Analyze the provided soil sensor data and 7-day weather forecast.
-Output ONLY a direct, actionable SMS advisory in Swahili (or simple English if needed).
+Output ONLY a direct, actionable SMS advisory in English.
 Max 160 characters. No jargon, no intro, no polite greetings.
 Focus on: watering, fertilizing, or crop rotation based on NPK and pH.
-Example: 'Udongo ni mkavu. Mvua inakuja kesho. Subiri kupanda mahindi wiki iyayo. Ongeza mbolea ya DAP.'"""
+Example: 'Soil is dry. Rain is expected tomorrow. Delay maize planting by one week. Add a small amount of DAP fertilizer.'"""
 
 def get_weather(lat, lon):
     """Haal 7-daagse voorspelling op van Open-Meteo."""
