@@ -150,12 +150,5 @@ document.getElementById('info-overlay').addEventListener('click', () => {
   document.getElementById('info-overlay').classList.add('hidden');
 });
 
-// Persist API key in sessionStorage
-const savedKey = sessionStorage.getItem('soilsms_api_key');
-if (savedKey) document.getElementById('api-key').value = savedKey;
-document.getElementById('api-key').addEventListener('input', e => {
-  sessionStorage.setItem('soilsms_api_key', e.target.value);
-});
-
 updateSensors();
 animate();

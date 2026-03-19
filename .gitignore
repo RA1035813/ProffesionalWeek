@@ -23,4 +23,4 @@ TestResults.xml
 
 
 .env
-*.env
+*.env__pycache__/

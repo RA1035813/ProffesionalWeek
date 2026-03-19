@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS farm_nodes;
 DROP TABLE IF EXISTS farmers;
 
 CREATE TABLE farmers(
-    id INTEGER PRIMARY KEY NOT NULL,
+    id SERIAL PRIMARY KEY NOT NULL,
     phone_number VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL
@@ -23,7 +23,7 @@ CREATE TABLE farm_nodes(
 );
 
 CREATE TABLE sensor_readings(
-    id BIGINT PRIMARY KEY NOT NULL,
+    id BIGSERIAL PRIMARY KEY NOT NULL,
     node_id VARCHAR(255) NOT NULL,
     timestamp TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
     moisture_pct DECIMAL(8, 2) NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE sensor_readings(
 );
 
 CREATE TABLE weather_logs(
-    id BIGINT PRIMARY KEY NOT NULL,
+    id BIGSERIAL PRIMARY KEY NOT NULL,
     reading_id BIGINT NOT NULL,
     forecast_rain_7d_mm DECIMAL(8, 2) NOT NULL,
     forecast_avg_temp_c DECIMAL(8, 2) NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE weather_logs(
 );
 
 CREATE TABLE advisories(
-    id BIGINT PRIMARY KEY NOT NULL,
+    id BIGSERIAL PRIMARY KEY NOT NULL,
     reading_id BIGINT NOT NULL,
     ai_model VARCHAR(255) NOT NULL,
     message_content TEXT NOT NULL,
