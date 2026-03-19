@@ -1,3 +1,4 @@
+import re
 import serial
 import time
 
@@ -26,6 +27,11 @@ class GSMModem:
             return False
 
     def send_sms(self, number: str, message: str) -> bool:
+        # Validate phone number to prevent AT command injection (C4)
+        if not re.match(r'^\+?[0-9]{7,15}$', number):
+            print(f"Invalid phone number format")
+            return False
+
         chunks = [message[i:i+155] for i in range(0, len(message), 155)]
         for chunk in chunks:
             try:

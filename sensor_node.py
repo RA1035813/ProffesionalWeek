@@ -1,3 +1,4 @@
+import os
 import time
 import json
 import random
@@ -7,8 +8,8 @@ import logging
 # --- CONFIGURATION ---
 SIMULATE = True          # Set to False when running on actual RPi
 USE_HTTP = True          # Use HTTP POST for local testing instead of SMS
-SERVER_URL = "http://127.0.0.1:5000/api/data"
-FARMER_PHONE = "+32493882886"
+SERVER_URL = os.environ.get("SERVER_URL", "http://127.0.0.1:5000/api/data")
+FARMER_PHONE = os.environ.get("FARMER_PHONE", "+32493882886")
 NODE_ID = "DEMO_NODE_001"
 READ_INTERVAL = 60       # Seconds between readings for prototype
 

@@ -1,8 +1,19 @@
+import os
+import re
 import requests
 
 def send_via_africas_talking(to: str, message: str) -> bool:
-    AT_API_KEY = "your_api_key_here"
-    AT_USERNAME = "your_username_here"
+    AT_API_KEY = os.environ.get("AT_API_KEY", "")
+    AT_USERNAME = os.environ.get("AT_USERNAME", "")
+
+    if not AT_API_KEY or not AT_USERNAME:
+        print("Error: AT_API_KEY and AT_USERNAME must be set as environment variables.")
+        return False
+
+    # Validate phone number format (C4)
+    if not re.match(r'^\+?[0-9]{7,15}$', to):
+        print(f"Invalid phone number format")
+        return False
     
     # Chunk the message if it exceeds standard SMS length
     chunks = [message[i:i+155] for i in range(0, len(message), 155)]

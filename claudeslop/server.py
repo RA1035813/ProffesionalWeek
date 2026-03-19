@@ -27,25 +27,36 @@ Environment variables:
 """
 
 import os
+import re
 import json
 import time
 import logging
+import logging.handlers
 import requests
 import serial
 from flask import Flask, request, jsonify
 from datetime import datetime
 
+LOG_FILE = os.environ.get("SOILSMS_LOG_FILE", "/var/log/soilsms_server.log")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.FileHandler("/var/log/soilsms_server.log"),
+        logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=10*1024*1024, backupCount=5),
         logging.StreamHandler()
     ]
 )
 log = logging.getLogger("soilsms.server")
 
 app = Flask(__name__)
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    return response
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
@@ -59,6 +70,12 @@ FARM_LAT          = float(os.environ.get("SERVER_LAT", "-6.3"))
 FARM_LON          = float(os.environ.get("SERVER_LON", "34.8"))
 FARMER_PHONE      = os.environ.get("FARMER_PHONE", "+32493882886")
 GSM_PORT          = os.environ.get("GSM_PORT", "/dev/ttyAMA0")
+
+def mask_phone(phone: str) -> str:
+    """Mask phone number for safe logging (M5)."""
+    if not phone or len(phone) < 6:
+        return "***"
+    return phone[:4] + "***" + phone[-3:]
 
 # ─── WEATHER ─────────────────────────────────────────────────────────────────
 
@@ -198,8 +215,8 @@ Provide your agronomic assessment and recommendations."""
             raise ValueError(f"Unexpected LLM response payload: {data}")
         return content.strip()
     except Exception as e:
-        log.error(f"LLM API error: {e}")
-        return f"Analysis failed: {e}. Raw data sent: pH={sensor_data.get('ph')}, moisture={sensor_data.get('moisture_pct')}%, N={sensor_data.get('nitrogen_mg_kg')} P={sensor_data.get('phosphorus_mg_kg')} K={sensor_data.get('potassium_mg_kg')}"
+        log.error(f"LLM API error: {e}", exc_info=True)
+        return "Analysis temporarily unavailable. Please check soil conditions manually and try again later."
 
 # ─── SMS SENDING ─────────────────────────────────────────────────────────────
 
@@ -223,6 +240,11 @@ class GSMModem:
             return False
 
     def send_sms(self, number: str, message: str) -> bool:
+        # Validate phone number to prevent AT command injection (C4)
+        if not re.match(r'^\+?[0-9]{7,15}$', number):
+            log.error(f"Invalid phone number format — rejecting SMS send")
+            return False
+
         chunks = [message[i:i+155] for i in range(0, len(message), 155)]
         for chunk in chunks:
             try:
@@ -245,6 +267,10 @@ class GSMModem:
 
 def send_via_africas_talking(to: str, message: str) -> bool:
     """Send SMS via Africa's Talking API (alternative to local modem)."""
+    if not re.match(r'^\+?[0-9]{7,15}$', to):
+        log.error("Invalid phone number format — rejecting SMS send")
+        return False
+
     chunks = [message[i:i+155] for i in range(0, len(message), 155)]
     for chunk in chunks:
         try:
@@ -291,7 +317,7 @@ def process_sensor_sms(raw_message: str, sender_phone: str):
     3. Analyse with low-cost LLM API
     4. Reply to farmer
     """
-    log.info(f"Processing SMS from {sender_phone}: {raw_message[:80]}...")
+    log.info(f"Processing SMS from {mask_phone(sender_phone)}: {raw_message[:80]}...")
 
     # 1. Parse sensor JSON
     try:
@@ -316,7 +342,7 @@ def process_sensor_sms(raw_message: str, sender_phone: str):
     timestamp = datetime.utcnow().strftime("%d/%m %H:%M")
     full_reply = f"SoilSMS {timestamp} UTC\n{analysis}"
 
-    log.info(f"Sending reply to {FARMER_PHONE} ({len(full_reply)} chars)")
+    log.info(f"Sending reply to {mask_phone(FARMER_PHONE)} ({len(full_reply)} chars)")
     success = send_reply_sms(FARMER_PHONE, full_reply)
 
     if success:
