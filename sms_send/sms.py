@@ -2,13 +2,20 @@ import os
 import json
 import requests
 import pandas as pd
+import logging
+import sys
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
+# Ensure project root is in sys.path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from SMS.sms_handler import send_sms
+from FastAPI import database, models, integration
+
 # ── Config ────────────────────────────────────────────────────────────────────
 load_dotenv()
-API_KEY     = os.getenv("httpsms_api_key", "").strip()
-FROM_NUMBER = os.getenv("Ward_phone")
+log = logging.getLogger("soilsms.incoming")
 
 # Sessions to track the user's last choice: { 'phone_number': 'choice' }
 user_sessions = {}
@@ -23,7 +30,7 @@ def get_coords(location_name):
             result = res["results"][0]
             return result["latitude"], result["longitude"], result["name"]
     except Exception as e:
-        print(f"Geocoding error: {e}")
+        log.error(f"Geocoding error: {e}")
     return None, None, None
 
 # ── Weather Logic ─────────────────────────────────────────────────────────────
@@ -44,7 +51,8 @@ def get_weather_data(lat, lon, days=1):
             "rain": response['hourly']['rain']
         })
         return df
-    except:
+    except Exception as e:
+        log.error(f"Weather data error: {e}")
         return None
 
 def format_weather_sms(df, title, location_name):
@@ -61,20 +69,15 @@ def format_weather_sms(df, title, location_name):
         sms_lines.append(f"{row['time_local'].strftime('%H:%M')} | {row['temp']:.1f}°C | 🌧️ {row['rain']:.1f}mm")
     return "\n".join(sms_lines)
 
-# ── SMS helper ────────────────────────────────────────────────────────────────
-def send_sms(to: str, body: str):
-    requests.post(
-        "https://api.httpsms.com/v1/messages/send",
-        headers={"x-api-key": API_KEY, "Content-Type": "application/json"},
-        data=json.dumps({"content": body, "from": FROM_NUMBER, "to": to, "skip_rcs": True}),
-    )
-
 # ── Flask app ─────────────────────────────────────────────────────────────────
 app = Flask(__name__)
 
 @app.route("/incoming_sms", methods=["POST"])
 def incoming_sms():
     payload = request.get_json(force=True, silent=True)
+    if not payload:
+        return jsonify({"status": "no payload"}), 400
+        
     data = payload.get("data", {})
     
     # Determine sender
@@ -83,7 +86,7 @@ def incoming_sms():
     text = (data.get("content") or "").strip()
 
     if not sender: 
-        return jsonify({"status": "ok"}), 200
+        return jsonify({"status": "no sender"}), 200
 
     # STEP 2: If the user is in a session (waiting for location)
     if sender in user_sessions:
@@ -108,7 +111,45 @@ def incoming_sms():
             user_sessions[sender] = text  # Remember that we are waiting for a location
             send_sms(sender, "📍 For which city or town do you want the weather?")
         elif text == "3":
-            send_sms(sender, "🌱 Soil quality: pH 6.5, moisture good (Location-independent)")
+            # Real Soil Quality Logic
+            db = next(database.get_db())
+            try:
+                # Find farmer by phone number (match last 9 digits to handle country code variants)
+                search_num = sender[-9:]
+                farmer = db.query(models.Farmer).filter(models.Farmer.phone_number.contains(search_num)).first()
+                if not farmer:
+                    send_sms(sender, "❌ Farmer record not found for this number.")
+                    return jsonify({"status": "ok"}), 200
+                
+                # Find latest reading for this farmer's nodes
+                node_ids = [node.node_id for node in farmer.nodes]
+                reading = db.query(models.SensorReading).filter(models.SensorReading.node_id.in_(node_ids)).order_by(models.SensorReading.timestamp.desc()).first()
+                
+                if not reading:
+                    send_sms(sender, "🌱 No sensor data found for your farm yet.")
+                else:
+                    # Get Weather
+                    node = db.query(models.FarmNode).filter(models.FarmNode.node_id == reading.node_id).first()
+                    weather = integration.get_weather(float(node.latitude), float(node.longitude))
+                    
+                    # Generate Advice
+                    sensor_data = {
+                        "moisture_pct": float(reading.moisture_pct),
+                        "ph": float(reading.ph),
+                        "nitrogen": reading.nitrogen_mg_kg,
+                        "phosphorus": reading.phosphorus_mg_kg,
+                        "potassium": reading.potassium_mg_kg,
+                        "soil_temp": float(reading.soil_temp_c),
+                        "air_temp": float(reading.air_temp_c),
+                        "air_humidity": float(reading.air_humid_pct)
+                    }
+                    advice, _ = integration.generate_ai_advice(sensor_data, weather)
+                    send_sms(sender, advice)
+            except Exception as e:
+                log.error(f"Error handling soil quality request: {e}")
+                send_sms(sender, "⚠️ Error processing your request. Please try again later.")
+            finally:
+                db.close()
         else:
             help_msg = "Reply with:\n1️⃣ Today's weather\n2️⃣ Weekly weather\n3️⃣ Soil quality"
             send_sms(sender, help_msg)

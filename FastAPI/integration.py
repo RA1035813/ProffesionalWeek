@@ -5,7 +5,7 @@ import time
 import datetime
 from sqlalchemy.orm import Session
 from . import models, schemas
-import serial
+from SMS.sms_handler import send_sms
 
 log = logging.getLogger("soilsms.integration")
 
@@ -42,9 +42,8 @@ def generate_ai_advice(sensor_data, weather_data):
     if USE_LOCAL_AI:
         try:
             # We assume localAI is in the PYTHONPATH or current dir
-            # In Docker, we will ensure it's copied.
             from localAI.local_inference import get_local_ai_advice
-            return get_local_ai_advice(sensor_data, weather_data), ai_model
+            return get_local_ai_advice(sensor_data, weather_data, system_prompt), ai_model
         except ImportError:
             log.error("localAI.local_inference not found. Falling back to simple advice.")
             return "Soil PH is low. Add lime.", ai_model
@@ -67,7 +66,7 @@ def generate_ai_advice(sensor_data, weather_data):
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                "max_tokens": 200,
+                "max_tokens": 300,
             },
             timeout=30,
         )
@@ -77,54 +76,6 @@ def generate_ai_advice(sensor_data, weather_data):
     except Exception as e:
         log.error(f"AI Generation failed: {e}")
         return "Please check your soil and weather manually.", ai_model
-
-def send_sms(phone_number, message):
-    """Verstuurt SMS via modem, Africa's Talking of httpSMS."""
-    SMS_MODE = os.getenv("SMS_MODE", "modem")
-    if SMS_MODE == "modem":
-        GSM_PORT = os.getenv("GSM_PORT", "/dev/ttyAMA0")
-        try:
-            # Simple serial logic (like in SimCardSMSapi.py)
-            ser = serial.Serial(GSM_PORT, 9600, timeout=5)
-            ser.write(b"AT+CMGF=1\r\n")
-            time.sleep(1)
-            ser.write(f'AT+CMGS="{phone_number}"\r\n'.encode())
-            time.sleep(0.5)
-            ser.write((message + chr(26)).encode())
-            time.sleep(3)
-            ser.close()
-            log.info(f"SMS Sent via Modem to {phone_number}")
-            return True
-        except Exception as e:
-            log.error(f"Modem SMS failed: {e}")
-            return False
-    elif SMS_MODE == "africas_talking":
-        try:
-            from SMS.CloudSMSapi import send_via_africas_talking
-            return send_via_africas_talking(phone_number, message)
-        except ImportError:
-            log.error("SMS.CloudSMSapi not found.")
-            return False
-        except Exception as e:
-            log.error(f"AT SMS failed: {e}")
-            return False
-    elif SMS_MODE == "httpsms":
-        API_KEY = os.getenv("httpsms_api_key", "").strip()
-        FROM_NUMBER = os.getenv("Ward_phone")
-        try:
-            resp = requests.post(
-                "https://api.httpsms.com/v1/messages/send",
-                headers={"x-api-key": API_KEY, "Content-Type": "application/json"},
-                json={"content": message, "from": FROM_NUMBER, "to": phone_number, "skip_rcs": True},
-                timeout=15
-            )
-            resp.raise_for_status()
-            log.info(f"SMS Sent via httpSMS to {phone_number}")
-            return True
-        except Exception as e:
-            log.error(f"httpSMS failed: {e}")
-            return False
-    return False
 
 def process_reading_and_notify(db_session_factory, reading_id: int):
     """Achtergrond taak om AI advies te genereren en SMS te sturen."""
