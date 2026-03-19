@@ -96,24 +96,7 @@
       <label>OpenRouter API Key</label>
       <input type="password" id="api-key" placeholder="sk-or-..." autocomplete="off">
       <label>Model</label>
-      <select id="llm-model">
-        <optgroup label="Free (no cost)">
-          <option value="openrouter/free">Free Models Router (auto)</option>
-          <option value="stepfun/step-3.5-flash:free">StepFun Step 3.5 Flash</option>
-          <option value="minimax/minimax-m2.5:free">MiniMax M2.5</option>
-          <option value="nvidia/nemotron-3-nano-30b-a3b:free">NVIDIA Nemotron 3 Nano 30B</option>
-          <option value="arcee-ai/trinity-large-preview:free">Arcee Trinity Large</option>
-          <option value="liquid/lfm-2.5-1.2b-instruct:free">LiquidAI LFM 2.5 1.2B</option>
-        </optgroup>
-        <optgroup label="Paid">
-          <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
-          <option value="meta-llama/llama-4-maverick">Llama 4 Maverick</option>
-          <option value="mistralai/mistral-small-3.1-24b-instruct">Mistral Small 3.1</option>
-          <option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
-          <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
-          <option value="qwen/qwen3-8b">Qwen3 8B</option>
-        </optgroup>
-      </select>
+      <input type="text" value="Arcee Trinity Large (fixed)" readonly>
     </div>
     <button id="ai-analyze-btn" onclick="runAnalysis()">ANALYZE SENSORS</button>
     <div id="ai-status"></div>

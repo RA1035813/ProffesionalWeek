@@ -16,6 +16,8 @@ const prebuiltSMS = [
 let llmSMS = [];
 // Which list the Nokia cycles through
 let activeSMSList = prebuiltSMS;
+const FIXED_LLM_MODEL = 'arcee-ai/trinity-large-preview:free';
+const FIXED_LLM_MODEL_NAME = 'Arcee Trinity Large';
 
 function toggleNokia() {
   const screen = document.getElementById('nokia-screen');
@@ -197,11 +199,10 @@ async function runAnalysis() {
     return;
   }
 
-  const model = document.getElementById('llm-model').value;
   btn.disabled = true;
   btn.textContent = 'ANALYZING...';
   status.style.color = '#f1c40f';
-  status.textContent = 'Sending sensor data to ' + model.split('/')[1] + '...';
+  status.textContent = 'Sending sensor data to ' + FIXED_LLM_MODEL_NAME + '...';
 
   const userMessage = `SOIL SENSOR READING (node FARM001):
 Moisture: ${S.moisture.toFixed(1)}%
@@ -230,7 +231,7 @@ Provide your SMS advisory now.`;
         'X-Title': 'SoilSMS Demo'
       },
       body: JSON.stringify({
-        model: model,
+        model: FIXED_LLM_MODEL,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: userMessage }
