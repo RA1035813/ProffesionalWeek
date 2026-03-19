@@ -55,6 +55,20 @@ def validate_sensor_value(value, min_val, max_val) -> bool:
     except (TypeError, ValueError):
         return False
 
+# Expected physical ranges per sensor type (key fragments → (min, max))
+SENSOR_RANGES = {
+    "ph":          (0.0, 14.0),
+    "nitrogen":    (0.0, 1000.0),
+    "phosphorus":  (0.0, 1000.0),
+    "potassium":   (0.0, 10000.0),
+    "moisture":    (0.0, 100.0),
+    "temperature": (-50.0, 100.0),
+    "humidity":    (0.0, 100.0),
+    "n":           (0.0, 1000.0),
+    "p":           (0.0, 1000.0),
+    "k":           (0.0, 10000.0),
+}
+
 def get_weather(lat, lon):
     """Haal 7-daagse voorspelling op van Open-Meteo."""
     # Validate coordinates (H5)
@@ -144,13 +158,23 @@ def handle_incoming_data():
         if not isinstance(sensors, dict):
             return jsonify({"status": "error", "message": "Missing or invalid sensors data"}), 400
 
-        # Validate sensor values are numeric (H4, M4)
+        # Validate sensor values are numeric and within expected range (H4, M4)
         for key, value in sensors.items():
             if value is not None:
-                try:
-                    float(value)
-                except (TypeError, ValueError):
-                    return jsonify({"status": "error", "message": f"Sensor '{key}' must be numeric"}), 400
+                range_entry = SENSOR_RANGES.get(key.lower())
+                if range_entry is not None:
+                    min_val, max_val = range_entry
+                    if not validate_sensor_value(value, min_val, max_val):
+                        return jsonify({
+                            "status": "error",
+                            "message": f"Sensor '{key}' value out of range or not numeric "
+                                       f"(expected {min_val}–{max_val})",
+                        }), 400
+                else:
+                    try:
+                        float(value)
+                    except (TypeError, ValueError):
+                        return jsonify({"status": "error", "message": f"Sensor '{key}' must be numeric"}), 400
 
         log.info(f"Data ontvangen van Node {node_id} (Boer: {mask_phone(farmer_phone)})")
 
